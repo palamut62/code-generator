@@ -1,0 +1,54 @@
+# Dependencies
+/node_modules
+/temp-projects
+/temp-projects/*
+
+node_modules
+*node_modules
+temp-projects
+temp-projects/*
+
+
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+
+# Production
+/build
+/dist
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env*.local
+.env
+
+# VS Code
+.vscode/
+
+# Temp files
+/temp-projects
+/temp
+*.tmp
+
+# IDE files
+.idea/
+*.swp
+*.swo
+
+# System Files
+Thumbs.db
