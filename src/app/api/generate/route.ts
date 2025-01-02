@@ -122,7 +122,7 @@ export async function POST(request: Request) {
 
     if (!input || !apiKey || !model) {
       return NextResponse.json(
-        { message: 'Input, API key and model are required' },
+        { error: 'Input, API key and model are required' },
         { status: 400 }
       );
     }

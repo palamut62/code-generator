@@ -14,6 +14,7 @@ interface DeleteDialogProps {
   onClose: () => void;
   onConfirm: () => void;
   projectId: string;
+  isDeleting: boolean;
 }
 
 interface ApiSettings {
@@ -37,7 +38,7 @@ const AVAILABLE_MODELS = [
   { id: 'aqa', name: 'AQA', description: 'Sorulara kaynak temelli yanıtlar verme' },
 ];
 
-function DeleteDialog({ isOpen, onClose, onConfirm, projectId }: DeleteDialogProps) {
+function DeleteDialog({ isOpen, onClose, onConfirm, projectId, isDeleting }: DeleteDialogProps) {
   if (!isOpen) return null;
 
   return (
@@ -50,15 +51,35 @@ function DeleteDialog({ isOpen, onClose, onConfirm, projectId }: DeleteDialogPro
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded text-[#8b949e] hover:text-white font-mono text-sm border border-[#30363d] hover:bg-[#30363d]"
+            disabled={isDeleting}
+            className={`px-4 py-2 rounded text-[#8b949e] hover:text-white font-mono text-sm border border-[#30363d] hover:bg-[#30363d] transition-colors ${
+              isDeleting ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 rounded bg-red-500 hover:bg-red-600 text-white font-mono text-sm"
+            disabled={isDeleting}
+            className={`flex items-center gap-2 px-4 py-2 rounded font-mono text-sm transition-colors ${
+              isDeleting
+                ? 'bg-red-500/50 cursor-not-allowed'
+                : 'bg-red-500 hover:bg-red-600'
+            } text-white`}
           >
-            Delete
+            {isDeleting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                <span>Deleting...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span>Delete</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -175,6 +196,7 @@ export default function Home() {
   const [apiSettings, setApiSettings] = useState<ApiSettings | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Mevcut projeleri yükle
   useEffect(() => {
@@ -249,8 +271,8 @@ export default function Home() {
     if (!projectId || !selectedProject) return;
 
     try {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
       const project = projects.find(p => p.id === selectedProject);
       if (!project) return;
@@ -297,7 +319,7 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           input,
           apiKey: apiSettings.apiKey,
           model: apiSettings.model
@@ -305,14 +327,11 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate application');
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to generate application');
       }
 
       const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
 
       setLoadingSteps('Installing dependencies...');
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -332,8 +351,8 @@ export default function Home() {
       setSelectedProject(data.projectId);
       setFiles(data.files);
       setPreviewUrl(`http://localhost:${data.port}`);
-      setInput(''); // Input'u temizle
-      setLoadingSteps(''); // Loading mesajını temizle
+      setInput('');
+      setLoadingSteps('');
 
     } catch (error) {
       console.error('Error generating application:', error);
@@ -393,9 +412,23 @@ export default function Home() {
     if (!projectToDelete) return;
 
     try {
-      setLoading(true);
+      setIsDeleting(true);
       setError(null);
 
+      // Önce projeyi durdur
+      try {
+        await fetch('/api/stop-project', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ projectId: projectToDelete }),
+        });
+      } catch (error) {
+        console.warn('Failed to stop project:', error);
+      }
+
+      // Sonra projeyi sil
       const response = await fetch('/api/delete-project', {
         method: 'POST',
         headers: {
@@ -405,24 +438,25 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete project');
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete project');
+      }
+
+      // State'leri temizle
+      if (selectedProject === projectToDelete) {
+        setPreviewUrl(''); // Önce preview URL'ini temizle
+        setSelectedProject(null);
+        setFiles({});
       }
 
       // Projeyi listeden kaldır
-      setProjects(projects.filter(p => p.id !== projectToDelete));
-
-      // Eğer silinen proje seçili olan projeyse, seçimi temizle
-      if (selectedProject === projectToDelete) {
-        setSelectedProject(null);
-        setFiles({});
-        setPreviewUrl('');
-      }
+      setProjects(prev => prev.filter(p => p.id !== projectToDelete));
 
     } catch (error) {
       console.error('Error deleting project:', error);
       setError(error instanceof Error ? error.message : 'Failed to delete project');
     } finally {
-      setLoading(false);
+      setIsDeleting(false);
       setIsDeleteDialogOpen(false);
       setProjectToDelete(null);
     }
@@ -507,9 +541,9 @@ export default function Home() {
             <div className="p-4">
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <textarea
+            <textarea
                     value={loadingSteps || input}
-                    onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => setInput(e.target.value)}
                     disabled={isGenerating}
                     placeholder="Describe your application... (e.g., Create a todo app with dark theme)"
                     rows={2}
@@ -526,7 +560,7 @@ export default function Home() {
                 </div>
 
                 <div className="flex flex-col justify-center">
-                  <button
+            <button
                     onClick={handleSubmit}
                     disabled={isGenerating || !input.trim() || !apiSettings}
                     className={`flex items-center gap-2 px-6 py-3 rounded-lg font-mono text-sm transition-all duration-200 h-[42px] ${
@@ -548,11 +582,11 @@ export default function Home() {
                         <span>Generate</span>
                       </>
                     )}
-                  </button>
+            </button>
                 </div>
-              </div>
+          </div>
 
-              {error && (
+          {error && (
                 <div className="mt-3 flex items-center gap-2 text-red-400">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -609,11 +643,24 @@ export default function Home() {
               <h2 className="text-white font-mono text-sm">Preview</h2>
             </div>
             <div className="h-[600px] bg-white">
-              <iframe
-                src={previewUrl}
-                className="w-full h-full border-none"
-                title="Preview"
-              />
+              {previewUrl ? (
+                <iframe
+                  src={previewUrl}
+                  className="w-full h-full border-none"
+                  title="Preview"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-[#8b949e] font-mono text-sm">
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
+                      <span>Starting preview...</span>
+                    </div>
+                  ) : (
+                    <span>Select a project to see the preview</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -649,11 +696,14 @@ export default function Home() {
       <DeleteDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => {
-          setIsDeleteDialogOpen(false);
-          setProjectToDelete(null);
+          if (!isDeleting) {
+            setIsDeleteDialogOpen(false);
+            setProjectToDelete(null);
+          }
         }}
         onConfirm={handleConfirmDelete}
         projectId={projectToDelete || ''}
+        isDeleting={isDeleting}
       />
       
       <SetupModal
@@ -668,6 +718,6 @@ export default function Home() {
           initialSettings={apiSettings}
         />
       )}
-    </div>
+      </div>
   );
 }
