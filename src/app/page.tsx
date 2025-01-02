@@ -500,197 +500,120 @@ export default function Home() {
         </div>
       </nav>
 
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
+      <main className="max-w-[1400px] mx-auto px-6 py-4">
         {/* Input Section */}
-        <div className="max-w-4xl mx-auto mb-8">
-          <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-4">
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <textarea
-                  value={loadingSteps || input}
-                  onChange={(e) => setInput(e.target.value)}
-                  disabled={isGenerating}
-                  placeholder="Describe your application... (e.g., Create a todo app with dark theme)"
-                  rows={3}
-                  className={`w-full bg-[#0d1117] text-[#c9d1d9] px-4 py-3 rounded-lg border border-[#30363d] focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] font-mono text-sm resize-none ${
-                    isGenerating ? 'animate-pulse' : ''
-                  }`}
-                />
-              </div>
-              
-              <div className="flex flex-col justify-end">
-                <button
-                  onClick={handleSubmit}
-                  disabled={isGenerating || !input.trim() || !apiSettings}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-mono text-sm transition-all duration-200 ${
-                    isGenerating || !input.trim() || !apiSettings
-                      ? 'bg-[#21262d] text-[#8b949e] cursor-not-allowed'
-                      : 'bg-[#238636] text-white hover:bg-[#2ea043] shadow-lg hover:shadow-xl hover:shadow-[#238636]/20'
-                  }`}
-                >
-                  {isGenerating ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                      <span>Generating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      <span>Generate</span>
-                    </>
+        <div className="mb-6">
+          <div className="bg-[#161b22] border border-[#30363d] rounded-xl shadow-lg">
+            <div className="p-4">
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <textarea
+                    value={loadingSteps || input}
+                    onChange={(e) => setInput(e.target.value)}
+                    disabled={isGenerating}
+                    placeholder="Describe your application... (e.g., Create a todo app with dark theme)"
+                    rows={2}
+                    className={`w-full bg-[#0d1117] text-[#c9d1d9] px-4 py-3 rounded-lg border border-[#30363d] focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] font-mono text-sm resize-none placeholder:text-[#8b949e]/50 ${
+                      isGenerating ? 'animate-pulse' : ''
+                    }`}
+                  />
+                  {isGenerating && (
+                    <div className="mt-2 flex items-center gap-2 text-[#58a6ff] text-xs font-mono">
+                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent"></div>
+                      <span>{loadingSteps}</span>
+                    </div>
                   )}
-                </button>
-              </div>
-            </div>
+                </div>
 
-            {error && (
-              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <p className="text-red-400 font-mono text-sm">{error}</p>
+                <div className="flex flex-col justify-center">
+                  <button
+                    onClick={handleSubmit}
+                    disabled={isGenerating || !input.trim() || !apiSettings}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-mono text-sm transition-all duration-200 h-[42px] ${
+                      isGenerating || !input.trim() || !apiSettings
+                        ? 'bg-[#21262d] text-[#8b949e] cursor-not-allowed'
+                        : 'bg-[#238636] text-white hover:bg-[#2ea043] shadow-lg hover:shadow-xl hover:shadow-[#238636]/20'
+                    }`}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span>Generate</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-            )}
+
+              {error && (
+                <div className="mt-3 flex items-center gap-2 text-red-400">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm font-mono">{error}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {error && (
-          <div className="bg-[#ff000020] border border-[#ff000040] rounded-lg p-4 mb-8 text-[#ff6b6b] font-mono text-sm">
-            {error}
-          </div>
-        )}
-
         {/* Code and Preview Sections */}
-        <div className="grid grid-cols-2 gap-8">
-          <div className="bg-[#0d1117] rounded-lg border border-[#30363d] overflow-hidden">
-            <div className="flex justify-between items-center px-4 py-2 border-b border-[#30363d]">
-              <div className="flex items-center gap-2">
-                <span className="text-white font-mono text-sm">Code</span>
-              </div>
-              <button
-                onClick={() => navigator.clipboard.writeText(files[selectedFile] || '')}
-                className="text-[#8b949e] hover:text-white p-1 rounded"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                </svg>
-              </button>
-            </div>
-            <div className="flex flex-col h-[500px]">
-              {/* Project Selection */}
-              <div className="px-4 py-2 border-b border-[#30363d] bg-[#161b22]">
-                <div className="flex items-center gap-2">
-                  <select
-                    value={selectedProject || ''}
-                    onChange={(e) => handleProjectChange(e.target.value)}
-                    className="flex-1 bg-[#0d1117] text-[#8b949e] px-3 py-1.5 rounded border border-[#30363d] text-sm font-mono focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]"
+        <div className="grid grid-cols-2 gap-6">
+          {/* Code Section */}
+          <div className="bg-[#161b22] border border-[#30363d] rounded-xl shadow-lg overflow-hidden">
+            <div className="border-b border-[#30363d] bg-[#161b22]">
+              <div className="flex items-center gap-2 p-4">
+                <select
+                  value={selectedProject || ''}
+                  onChange={(e) => handleProjectChange(e.target.value)}
+                  className="flex-1 bg-[#0d1117] text-[#8b949e] px-3 py-1.5 rounded border border-[#30363d] text-sm font-mono focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]"
+                >
+                  <option value="">Select a project...</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      Project {project.id}
+                    </option>
+                  ))}
+                </select>
+                {selectedProject && (
+                  <button
+                    onClick={() => handleDeleteProject(selectedProject)}
+                    disabled={loading}
+                    className={`text-red-400 hover:text-red-300 p-1.5 rounded hover:bg-[#1f2428] ${
+                      loading ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    title="Delete project"
                   >
-                    <option value="">Select a project...</option>
-                    {projects.map((project) => (
-                      <option key={project.id} value={project.id}>
-                        Project {project.id}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedProject && (
-                    <button
-                      onClick={() => handleDeleteProject(selectedProject)}
-                      disabled={loading}
-                      className={`text-red-400 hover:text-red-300 p-1.5 rounded hover:bg-[#1f2428] ${
-                        loading ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                      title="Delete project"
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                )}
               </div>
-              
-              {/* Sidebar and Editor */}
-              <div className="flex flex-1">
-                {/* Sidebar */}
-                <div className="w-64 border-r border-[#30363d] overflow-y-auto bg-[#0d1117]">
-                  <div className="p-2">
-                    {Object.keys(files).map((file) => (
-                      <button
-                        key={file}
-                        onClick={() => setSelectedFile(file)}
-                        className={`w-full text-left px-3 py-2 rounded text-sm font-mono ${
-                          selectedFile === file
-                            ? 'bg-[#1f2428] text-white'
-                            : 'text-[#8b949e] hover:bg-[#1f2428] hover:text-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <span className="truncate">{file}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {/* Editor */}
-                <div className="flex-1">
-                  <Editor
-                    height="100%"
-                    defaultLanguage="typescript"
-                    theme="vs-dark"
-                    value={files[selectedFile] || ''}
-                    options={{
-                      minimap: { enabled: false },
-                      fontSize: 13,
-                      fontFamily: 'JetBrains Mono, monospace',
-                      readOnly: true,
-                      lineNumbers: 'on',
-                      scrollBeyondLastLine: false,
-                      renderLineHighlight: 'all',
-                      padding: { top: 16, bottom: 16 },
-                    }}
-                  />
-                </div>
-              </div>
+            </div>
+            <div className="h-[600px] overflow-auto">
+              {/* Monaco Editor */}
             </div>
           </div>
 
-          <div className="bg-[#0d1117] rounded-lg border border-[#30363d] overflow-hidden">
-            <div className="flex justify-between items-center px-4 py-2 border-b border-[#30363d]">
-              <span className="text-white font-mono text-sm">Preview</span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleRefresh}
-                  disabled={loading || !selectedProject}
-                  className={`text-[#8b949e] hover:text-white p-1 rounded ${
-                    loading || !selectedProject ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </button>
-                <button className="text-[#8b949e] hover:text-white p-1 rounded">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                  </svg>
-                </button>
-              </div>
+          {/* Preview Section */}
+          <div className="bg-[#161b22] border border-[#30363d] rounded-xl shadow-lg overflow-hidden">
+            <div className="border-b border-[#30363d] bg-[#161b22] p-4">
+              <h2 className="text-white font-mono text-sm">Preview</h2>
             </div>
-            <div className="h-[500px] bg-white">
-              {previewUrl ? (
-                <iframe
-                  key={previewUrl}
-                  src={previewUrl}
-                  className="w-full h-full"
-                  sandbox="allow-same-origin allow-scripts allow-forms"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-[#8b949e] font-mono text-sm">
-                  {loading ? 'Starting preview...' : 'Select a project to see the preview'}
-                </div>
-              )}
+            <div className="h-[600px] bg-white">
+              <iframe
+                src={previewUrl}
+                className="w-full h-full border-none"
+                title="Preview"
+              />
             </div>
           </div>
         </div>
