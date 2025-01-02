@@ -9,6 +9,42 @@ interface Project {
   files: Record<string, string>;
 }
 
+interface DeleteDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  projectId: string;
+}
+
+function DeleteDialog({ isOpen, onClose, onConfirm, projectId }: DeleteDialogProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-6 max-w-md w-full mx-4">
+        <h2 className="text-white text-lg font-mono mb-4">Delete Project</h2>
+        <p className="text-[#8b949e] font-mono mb-6">
+          Are you sure you want to delete Project {projectId}? This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded text-[#8b949e] hover:text-white font-mono text-sm border border-[#30363d] hover:bg-[#30363d]"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 rounded bg-red-500 hover:bg-red-600 text-white font-mono text-sm"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [input, setInput] = useState('');
   const [files, setFiles] = useState<Record<string, string>>({});
@@ -19,6 +55,8 @@ export default function Home() {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   // Mevcut projeleri yükle
   useEffect(() => {
@@ -179,6 +217,51 @@ export default function Home() {
     }
   };
 
+  // Proje silme işlevi
+  const handleDeleteProject = async (projectId: string) => {
+    setProjectToDelete(projectId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/delete-project', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ projectId: projectToDelete }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete project');
+      }
+
+      // Projeyi listeden kaldır
+      setProjects(projects.filter(p => p.id !== projectToDelete));
+
+      // Eğer silinen proje seçili olan projeyse, seçimi temizle
+      if (selectedProject === projectToDelete) {
+        setSelectedProject(null);
+        setFiles({});
+        setPreviewUrl('');
+      }
+
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      setError(error instanceof Error ? error.message : 'Failed to delete project');
+    } finally {
+      setLoading(false);
+      setIsDeleteDialogOpen(false);
+      setProjectToDelete(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0D1117]">
       {/* Header */}
@@ -255,18 +338,34 @@ export default function Home() {
             <div className="flex flex-col h-[500px]">
               {/* Project Selection */}
               <div className="px-4 py-2 border-b border-[#30363d] bg-[#161b22]">
-                <select
-                  value={selectedProject || ''}
-                  onChange={(e) => handleProjectChange(e.target.value)}
-                  className="w-full bg-[#0d1117] text-[#8b949e] px-3 py-1.5 rounded border border-[#30363d] text-sm font-mono focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]"
-                >
-                  <option value="">Select a project...</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      Project {project.id}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedProject || ''}
+                    onChange={(e) => handleProjectChange(e.target.value)}
+                    className="flex-1 bg-[#0d1117] text-[#8b949e] px-3 py-1.5 rounded border border-[#30363d] text-sm font-mono focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]"
+                  >
+                    <option value="">Select a project...</option>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        Project {project.id}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedProject && (
+                    <button
+                      onClick={() => handleDeleteProject(selectedProject)}
+                      disabled={loading}
+                      className={`text-red-400 hover:text-red-300 p-1.5 rounded hover:bg-[#1f2428] ${
+                        loading ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                      title="Delete project"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
               
               {/* Sidebar and Editor */}
@@ -383,6 +482,16 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      <DeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setProjectToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        projectId={projectToDelete || ''}
+      />
     </div>
   );
 }
