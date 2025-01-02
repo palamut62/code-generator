@@ -489,33 +489,25 @@ export default function Home() {
         </div>
       </nav>
 
-      <main className="max-w-[1400px] mx-auto px-12 py-6">
+      <main className="max-w-[1400px] mx-auto px-6 py-6">
         {/* Input Section */}
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="relative">
-            <div className="flex flex-col gap-4">
-              <div className="relative">
+        <div className="max-w-4xl mx-auto mb-8">
+          <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-4">
+            <div className="flex gap-4">
+              <div className="flex-1">
                 <textarea
                   value={loadingSteps || input}
                   onChange={(e) => setInput(e.target.value)}
                   disabled={isGenerating}
                   placeholder="Describe your application... (e.g., Create a todo app with dark theme)"
                   rows={3}
-                  className={`w-full bg-[#161b22] text-[#c9d1d9] px-4 py-3 rounded-lg border border-[#30363d] focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] font-mono text-sm resize-none ${
+                  className={`w-full bg-[#0d1117] text-[#c9d1d9] px-4 py-3 rounded-lg border border-[#30363d] focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] font-mono text-sm resize-none ${
                     isGenerating ? 'animate-pulse' : ''
                   }`}
                 />
-                {isGenerating && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-[#161b22] bg-opacity-50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#58a6ff] border-t-transparent"></div>
-                      <span className="text-[#58a6ff] font-mono text-sm">{loadingSteps}</span>
-                    </div>
-                  </div>
-                )}
               </div>
               
-              <div className="flex justify-end">
+              <div className="flex flex-col justify-end">
                 <button
                   onClick={handleSubmit}
                   disabled={isGenerating || !input.trim() || !apiSettings}
@@ -535,12 +527,18 @@ export default function Home() {
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
-                      <span>Generate Application</span>
+                      <span>Generate</span>
                     </>
                   )}
                 </button>
               </div>
             </div>
+
+            {error && (
+              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <p className="text-red-400 font-mono text-sm">{error}</p>
+              </div>
+            )}
           </div>
         </div>
 
