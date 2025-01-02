@@ -3,6 +3,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 
+interface Project {
+  id: string;
+  port: number;
+  files: Record<string, string>;
+}
+
 export default function Home() {
   const [input, setInput] = useState('');
   const [files, setFiles] = useState<Record<string, string>>({});
@@ -11,6 +17,100 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+
+  // Mevcut projeleri yükle
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const response = await fetch('/api/projects');
+        const data = await response.json();
+        setProjects(data.projects);
+      } catch (error) {
+        console.error('Failed to load projects:', error);
+      }
+    };
+    loadProjects();
+  }, []);
+
+  // Proje değiştiğinde dosyaları ve önizlemeyi güncelle
+  const handleProjectChange = async (projectId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setSelectedProject(projectId);
+      
+      const project = projects.find(p => p.id === projectId);
+      if (project) {
+        setFiles(project.files);
+        setProjectId(project.id);
+
+        // Projeyi başlat
+        const response = await fetch('/api/start-project', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            projectId: project.id,
+            port: project.port
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to start project');
+        }
+
+        setPreviewUrl(`http://localhost:${project.port}`);
+      }
+    } catch (error) {
+      console.error('Error changing project:', error);
+      setError(error instanceof Error ? error.message : 'Failed to change project');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Preview'ı yenile ve projeyi yeniden başlat
+  const handleRefresh = async () => {
+    if (!projectId || !selectedProject) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const project = projects.find(p => p.id === selectedProject);
+      if (!project) return;
+
+      // Projeyi yeniden başlat
+      const response = await fetch('/api/start-project', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          projectId: project.id,
+          port: project.port
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to restart project');
+      }
+
+      // iframe'i yenile
+      const iframe = document.querySelector('iframe');
+      if (iframe) {
+        iframe.src = `http://localhost:${project.port}`;
+      }
+    } catch (error) {
+      console.error('Error refreshing preview:', error);
+      setError(error instanceof Error ? error.message : 'Failed to refresh preview');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     try {
@@ -152,48 +252,67 @@ export default function Home() {
                 </svg>
               </button>
             </div>
-            <div className="flex h-[500px] border-t border-[#30363d]">
-              {/* Sidebar */}
-              <div className="w-64 border-r border-[#30363d] overflow-y-auto bg-[#0d1117]">
-                <div className="p-2">
-                  {Object.keys(files).map((file) => (
-                    <button
-                      key={file}
-                      onClick={() => setSelectedFile(file)}
-                      className={`w-full text-left px-3 py-2 rounded text-sm font-mono ${
-                        selectedFile === file
-                          ? 'bg-[#1f2428] text-white'
-                          : 'text-[#8b949e] hover:bg-[#1f2428] hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span className="truncate">{file}</span>
-                      </div>
-                    </button>
+            <div className="flex flex-col h-[500px]">
+              {/* Project Selection */}
+              <div className="px-4 py-2 border-b border-[#30363d] bg-[#161b22]">
+                <select
+                  value={selectedProject || ''}
+                  onChange={(e) => handleProjectChange(e.target.value)}
+                  className="w-full bg-[#0d1117] text-[#8b949e] px-3 py-1.5 rounded border border-[#30363d] text-sm font-mono focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]"
+                >
+                  <option value="">Select a project...</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      Project {project.id}
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
-              {/* Editor */}
-              <div className="flex-1">
-                <Editor
-                  height="100%"
-                  defaultLanguage="typescript"
-                  theme="vs-dark"
-                  value={files[selectedFile] || ''}
-                  options={{
-                    minimap: { enabled: false },
-                    fontSize: 13,
-                    fontFamily: 'JetBrains Mono, monospace',
-                    readOnly: true,
-                    lineNumbers: 'on',
-                    scrollBeyondLastLine: false,
-                    renderLineHighlight: 'all',
-                    padding: { top: 16, bottom: 16 },
-                  }}
-                />
+              
+              {/* Sidebar and Editor */}
+              <div className="flex flex-1">
+                {/* Sidebar */}
+                <div className="w-64 border-r border-[#30363d] overflow-y-auto bg-[#0d1117]">
+                  <div className="p-2">
+                    {Object.keys(files).map((file) => (
+                      <button
+                        key={file}
+                        onClick={() => setSelectedFile(file)}
+                        className={`w-full text-left px-3 py-2 rounded text-sm font-mono ${
+                          selectedFile === file
+                            ? 'bg-[#1f2428] text-white'
+                            : 'text-[#8b949e] hover:bg-[#1f2428] hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span className="truncate">{file}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Editor */}
+                <div className="flex-1">
+                  <Editor
+                    height="100%"
+                    defaultLanguage="typescript"
+                    theme="vs-dark"
+                    value={files[selectedFile] || ''}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 13,
+                      fontFamily: 'JetBrains Mono, monospace',
+                      readOnly: true,
+                      lineNumbers: 'on',
+                      scrollBeyondLastLine: false,
+                      renderLineHighlight: 'all',
+                      padding: { top: 16, bottom: 16 },
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -203,13 +322,13 @@ export default function Home() {
               <span className="text-white font-mono text-sm">Preview</span>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => {
-                    const iframe = document.querySelector('iframe');
-                    if (iframe) iframe.src = previewUrl;
-                  }}
-                  className="text-[#8b949e] hover:text-white p-1 rounded"
+                  onClick={handleRefresh}
+                  disabled={loading || !selectedProject}
+                  className={`text-[#8b949e] hover:text-white p-1 rounded ${
+                    loading || !selectedProject ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
                 </button>
@@ -223,13 +342,14 @@ export default function Home() {
             <div className="h-[500px] bg-white">
               {previewUrl ? (
                 <iframe
+                  key={previewUrl}
                   src={previewUrl}
                   className="w-full h-full"
                   sandbox="allow-same-origin allow-scripts allow-forms"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-[#8b949e] font-mono text-sm">
-                  Generate an application to see the preview
+                  {loading ? 'Starting preview...' : 'Select a project to see the preview'}
                 </div>
               )}
             </div>
