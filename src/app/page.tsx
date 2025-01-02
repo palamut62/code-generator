@@ -174,6 +174,7 @@ export default function Home() {
   const [showSetup, setShowSetup] = useState(false);
   const [apiSettings, setApiSettings] = useState<ApiSettings | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Mevcut projeleri yükle
   useEffect(() => {
@@ -344,40 +345,41 @@ export default function Home() {
   };
 
   const handleDownload = async () => {
-    if (!projectId) return;
+    if (!selectedProject || isDownloading) return;
 
     try {
+      setIsDownloading(true);
+
       const response = await fetch('/api/download', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ projectId }),
+        body: JSON.stringify({ projectId: selectedProject }),
       });
 
       if (!response.ok) {
-        throw new Error('Download failed');
+        throw new Error('Failed to download project');
       }
 
       // Blob olarak yanıtı al
       const blob = await response.blob();
-      
+
       // Download link oluştur
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `code-generator-${projectId}.zip`;
-      
-      // Tıklama olayını tetikle
+      a.download = `code-generator-${selectedProject}.zip`;
       document.body.appendChild(a);
       a.click();
-      
-      // Temizlik
-      document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
     } catch (error) {
-      console.error('Download error:', error);
-      setError('Failed to download project');
+      console.error('Error downloading project:', error);
+      setError(error instanceof Error ? error.message : 'Failed to download project');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -472,17 +474,26 @@ export default function Home() {
 
               <button
                 onClick={handleDownload}
-                disabled={!selectedProject}
+                disabled={!selectedProject || isDownloading}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-mono transition-all duration-200 ${
-                  selectedProject
-                    ? 'bg-white text-black hover:bg-gray-100 hover:shadow-lg'
-                    : 'bg-[#21262d] text-[#8b949e] cursor-not-allowed border border-[#30363d]'
+                  !selectedProject || isDownloading
+                    ? 'bg-[#21262d] text-[#8b949e] cursor-not-allowed border border-[#30363d]'
+                    : 'bg-white text-black hover:bg-gray-100 hover:shadow-lg'
                 }`}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Download Project
+                {isDownloading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#8b949e] border-t-transparent"></div>
+                    <span>Downloading...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <span>Download Project</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
