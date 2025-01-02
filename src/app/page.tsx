@@ -180,6 +180,24 @@ const SetupModal: React.FC<SetupModalProps> = ({ isOpen, onSave, initialSettings
   );
 };
 
+// Yeni bir CurrentTime komponenti oluştur
+const CurrentTime = () => {
+  const [time, setTime] = useState('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      setTime(new Date().toLocaleTimeString());
+    };
+
+    updateTime(); // İlk değeri ayarla
+    const interval = setInterval(updateTime, 1000); // Her saniye güncelle
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return <span>{time}</span>;
+};
+
 export default function Home() {
   const [input, setInput] = useState('');
   const [files, setFiles] = useState<Record<string, string>>({});
@@ -499,10 +517,11 @@ export default function Home() {
     }
   };
 
-  const handleSaveCode = async () => {
+  const handleSaveFile = async () => {
     if (!selectedProject || !selectedFile) return;
 
     try {
+      setLoading(true);
       const response = await fetch('/api/save-file', {
         method: 'POST',
         headers: {
@@ -517,8 +536,8 @@ export default function Home() {
 
       if (!response.ok) throw new Error('Failed to save file');
 
-      // Projeyi yeniden yükle
-      const updatedProject = projects.map(p => {
+      // Projeyi güncelle
+      setProjects(projects.map(p => {
         if (p.id === selectedProject) {
           return {
             ...p,
@@ -529,23 +548,34 @@ export default function Home() {
           };
         }
         return p;
-      });
-      setProjects(updatedProject);
+      }));
+
       setHasChanges(false);
+      setError('');
     } catch (error) {
       console.error('Error saving file:', error);
-      // Hata durumunda kullanıcıya bilgi ver
-      setError('Failed to save file');
+      setError(error instanceof Error ? error.message : 'Failed to save file');
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     if (selectedProject && selectedFile) {
-      const currentCode = projects.find(p => p.id === selectedProject)?.files[selectedFile] || '';
+      const project = projects.find(p => p.id === selectedProject);
+      const currentCode = project?.files[selectedFile] || '';
       setEditedCode(currentCode);
       setHasChanges(false);
     }
   }, [selectedProject, selectedFile]);
+
+  useEffect(() => {
+    const project = projects.find(p => p.id === selectedProject);
+    if (project && selectedFile) {
+      const currentCode = project.files[selectedFile] || '';
+      setEditedCode(currentCode);
+    }
+  }, [projects]);
 
   const handleRestartPreview = async () => {
     if (!selectedProject) return;
@@ -797,47 +827,82 @@ export default function Home() {
               {/* Code Editor */}
               <div className="flex-1 h-full">
                 {selectedProject && selectedFile ? (
-                  <Editor
-                    height="100%"
-                    defaultLanguage={
-                      selectedFile.endsWith('.tsx') || selectedFile.endsWith('.ts')
-                        ? 'typescript'
-                        : selectedFile.endsWith('.css')
-                        ? 'css'
-                        : selectedFile.endsWith('.json')
-                        ? 'json'
-                        : 'javascript'
-                    }
-                    theme="vs-dark"
-                    value={editedCode}
-                    onChange={handleEditorChange}
-                    options={{
-                      readOnly: false,
-                      minimap: { enabled: true },
-                      fontSize: 14,
-                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                      lineNumbers: 'on',
-                      scrollBeyondLastLine: false,
-                      automaticLayout: true,
-                      tabSize: 2,
-                      wordWrap: 'on',
-                      renderWhitespace: 'selection',
-                      colorDecorators: true,
-                      bracketPairColorization: { enabled: true },
-                      guides: {
-                        bracketPairs: true,
-                        indentation: true,
-                      }
-                    }}
-                    loading={
-                      <div className="h-full flex items-center justify-center text-[#8b949e] font-mono text-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
-                          <span>Loading editor...</span>
-                        </div>
-                      </div>
-                    }
-                  />
+                  <div className="h-full flex flex-col">
+                    {/* Editor Header */}
+                    <div className="flex items-center justify-between px-4 py-2 border-b border-[#30363d] bg-[#161b22]">
+                      <span className="text-[#8b949e] text-sm font-mono">{selectedFile}</span>
+                      {hasChanges && (
+                        <button
+                          onClick={handleSaveFile}
+                          disabled={loading}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-mono transition-colors ${
+                            loading
+                              ? 'bg-[#238636]/50 text-white/50 cursor-not-allowed'
+                              : 'bg-[#238636] text-white hover:bg-[#2ea043]'
+                          }`}
+                        >
+                          {loading ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/20 border-t-white/100"></div>
+                              <span>Saving...</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                              </svg>
+                              <span>Save</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Editor Content */}
+                    <div className="flex-1">
+                      <Editor
+                        height="100%"
+                        defaultLanguage={
+                          selectedFile.endsWith('.tsx') || selectedFile.endsWith('.ts')
+                            ? 'typescript'
+                            : selectedFile.endsWith('.css')
+                            ? 'css'
+                            : selectedFile.endsWith('.json')
+                            ? 'json'
+                            : 'javascript'
+                        }
+                        theme="vs-dark"
+                        value={editedCode}
+                        onChange={handleEditorChange}
+                        options={{
+                          readOnly: false,
+                          minimap: { enabled: true },
+                          fontSize: 14,
+                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                          lineNumbers: 'on',
+                          scrollBeyondLastLine: false,
+                          automaticLayout: true,
+                          tabSize: 2,
+                          wordWrap: 'on',
+                          renderWhitespace: 'selection',
+                          colorDecorators: true,
+                          bracketPairColorization: { enabled: true },
+                          guides: {
+                            bracketPairs: true,
+                            indentation: true,
+                          }
+                        }}
+                        loading={
+                          <div className="h-full flex items-center justify-center text-[#8b949e] font-mono text-sm">
+                            <div className="flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
+                              <span>Loading editor...</span>
+                            </div>
+                          </div>
+                        }
+                      />
+                    </div>
+                  </div>
                 ) : (
                   <div className="h-full flex items-center justify-center text-[#8b949e] font-mono text-sm">
                     {selectedProject ? (
@@ -935,7 +1000,7 @@ export default function Home() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>Last Updated: {new Date().toLocaleTimeString()}</span>
+            <span>Last Updated: <CurrentTime /></span>
           </div>
         </div>
       </main>
