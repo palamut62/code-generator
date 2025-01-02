@@ -477,17 +477,17 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D1117]">
+    <div className="min-h-screen bg-[#0D1117] flex flex-col">
       {/* Navbar */}
       <nav className="bg-[#161b22] border-b border-[#30363d]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-4">
-              <img src="/logo.png" alt="Logo" className="h-12 w-12" />
+              <img src="/logo.png" alt="Logo" className="h-10 w-10" />
               <div className="flex flex-col">
-                <h1 className="text-white text-xl font-mono">Code Generator</h1>
+                <h1 className="text-white text-lg font-mono">Code Generator</h1>
                 {apiSettings?.model && (
-                  <span className="text-[#8b949e] text-sm font-mono">
+                  <span className="text-[#8b949e] text-xs font-mono">
                     Using {getSelectedModelName()}
                   </span>
                 )}
@@ -534,16 +534,17 @@ export default function Home() {
         </div>
       </nav>
 
-      <main className="max-w-[1400px] mx-auto px-6 py-4">
+      {/* Main Content */}
+      <main className="flex-1 max-w-[1400px] mx-auto w-full px-6 py-4">
         {/* Input Section */}
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="bg-[#161b22] border border-[#30363d] rounded-xl shadow-lg">
             <div className="p-4">
               <div className="flex gap-4">
                 <div className="flex-1">
-            <textarea
+                  <textarea
                     value={loadingSteps || input}
-              onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => setInput(e.target.value)}
                     disabled={isGenerating}
                     placeholder="Describe your application... (e.g., Create a todo app with dark theme)"
                     rows={2}
@@ -560,7 +561,7 @@ export default function Home() {
                 </div>
 
                 <div className="flex flex-col justify-center">
-            <button
+                  <button
                     onClick={handleSubmit}
                     disabled={isGenerating || !input.trim() || !apiSettings}
                     className={`flex items-center gap-2 px-6 py-3 rounded-lg font-mono text-sm transition-all duration-200 h-[42px] ${
@@ -582,11 +583,11 @@ export default function Home() {
                         <span>Generate</span>
                       </>
                     )}
-            </button>
+                  </button>
                 </div>
-          </div>
+              </div>
 
-          {error && (
+              {error && (
                 <div className="mt-3 flex items-center gap-2 text-red-400">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -599,11 +600,11 @@ export default function Home() {
         </div>
 
         {/* Code and Preview Sections */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4 h-[calc(100vh-220px)]">
           {/* Code Section */}
           <div className="bg-[#161b22] border border-[#30363d] rounded-xl shadow-lg overflow-hidden">
             <div className="border-b border-[#30363d] bg-[#161b22]">
-              <div className="flex items-center gap-2 p-4">
+              <div className="flex items-center gap-2 p-3">
                 <select
                   value={selectedProject || ''}
                   onChange={(e) => handleProjectChange(e.target.value)}
@@ -632,17 +633,17 @@ export default function Home() {
                 )}
               </div>
             </div>
-            <div className="h-[600px] overflow-auto">
+            <div className="h-[calc(100%-48px)] overflow-auto">
               {/* Monaco Editor */}
             </div>
           </div>
 
           {/* Preview Section */}
           <div className="bg-[#161b22] border border-[#30363d] rounded-xl shadow-lg overflow-hidden">
-            <div className="border-b border-[#30363d] bg-[#161b22] p-4">
+            <div className="border-b border-[#30363d] bg-[#161b22] p-3">
               <h2 className="text-white font-mono text-sm">Preview</h2>
             </div>
-            <div className="h-[600px] bg-white">
+            <div className="h-[calc(100%-48px)] bg-[#0d1117]">
               {previewUrl ? (
                 <iframe
                   src={previewUrl}
@@ -664,34 +665,13 @@ export default function Home() {
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="mt-6 flex justify-between items-center text-[#8b949e] font-mono text-sm">
-          <div className="flex items-center gap-2">
-            <span>← Version: 1 / 1 →</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-              </svg>
-              <span>2293.33 tokens</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <span>1032 token/s</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>0.45s</span>
-            </div>
-          </div>
-        </div>
       </main>
+
+      {/* Modals */}
+      <SetupModal
+        isOpen={showSetup}
+        onSave={handleSaveSettings}
+      />
 
       <DeleteDialog
         isOpen={isDeleteDialogOpen}
@@ -705,19 +685,6 @@ export default function Home() {
         projectId={projectToDelete || ''}
         isDeleting={isDeleting}
       />
-      
-      <SetupModal
-        isOpen={showSetup}
-        onSave={handleSaveSettings}
-      />
-
-      {apiSettings && (
-        <SetupModal
-          isOpen={showSettings}
-          onSave={handleUpdateSettings}
-          initialSettings={apiSettings}
-        />
-      )}
-      </div>
+    </div>
   );
 }
