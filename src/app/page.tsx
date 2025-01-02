@@ -26,6 +26,7 @@ interface SetupModalProps {
   isOpen: boolean;
   onSave: (settings: ApiSettings) => void;
   initialSettings?: ApiSettings;
+  onClose?: () => void;
 }
 
 const AVAILABLE_MODELS = [
@@ -87,46 +88,47 @@ function DeleteDialog({ isOpen, onClose, onConfirm, projectId, isDeleting }: Del
   );
 }
 
-function SetupModal({ isOpen, onSave, initialSettings }: SetupModalProps) {
+const SetupModal: React.FC<SetupModalProps> = ({ isOpen, onSave, initialSettings, onClose }) => {
   const [apiKey, setApiKey] = useState(initialSettings?.apiKey || '');
   const [selectedModel, setSelectedModel] = useState(initialSettings?.model || AVAILABLE_MODELS[0].id);
   const [error, setError] = useState('');
 
-  // Modal açıldığında mevcut ayarları yükle
   useEffect(() => {
-    if (initialSettings) {
+    if (isOpen && initialSettings) {
       setApiKey(initialSettings.apiKey);
       setSelectedModel(initialSettings.model);
     }
-  }, [initialSettings, isOpen]);
+  }, [isOpen, initialSettings]);
 
-  if (!isOpen) return null;
-
-  const handleSubmit = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!apiKey.trim()) {
       setError('API Key is required');
       return;
     }
-
-    if (!apiKey.startsWith('AIza')) {
-      setError('Invalid API Key format');
-      return;
-    }
-
-    onSave({
-      apiKey: apiKey.trim(),
-      model: selectedModel,
-    });
+    onSave({ apiKey: apiKey.trim(), model: selectedModel });
+    setError('');
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-6 max-w-md w-full mx-4">
-        <h2 className="text-white text-lg font-mono mb-6">
-          {initialSettings ? 'Update Settings' : 'Setup Required'}
-        </h2>
-        
-        <div className="space-y-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-[#161b22] border border-[#30363d] rounded-xl shadow-xl w-full max-w-md">
+        <div className="flex justify-between items-center border-b border-[#30363d] p-4">
+          <h2 className="text-white font-mono text-lg">API Settings</h2>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="text-[#8b949e] hover:text-white p-1 rounded-lg hover:bg-[#21262d] transition-all duration-200"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+        <form onSubmit={handleSubmit} className="p-4">
           <div>
             <label className="block text-[#8b949e] font-mono text-sm mb-2">
               Google Gemini API Key
@@ -166,17 +168,17 @@ function SetupModal({ isOpen, onSave, initialSettings }: SetupModalProps) {
 
           <div className="flex justify-end mt-6">
             <button
-              onClick={handleSubmit}
+              type="submit"
               className="px-6 py-2 rounded bg-[#238636] text-white font-mono text-sm hover:bg-[#2ea043] transition-colors"
             >
               {initialSettings ? 'Update' : 'Save & Continue'}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
-}
+};
 
 export default function Home() {
   const [input, setInput] = useState('');
@@ -672,6 +674,15 @@ export default function Home() {
         isOpen={showSetup}
         onSave={handleSaveSettings}
       />
+
+      {apiSettings && (
+        <SetupModal
+          isOpen={showSettings}
+          onSave={handleUpdateSettings}
+          initialSettings={apiSettings}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
 
       <DeleteDialog
         isOpen={isDeleteDialogOpen}
