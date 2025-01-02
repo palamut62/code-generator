@@ -7,7 +7,6 @@ import path from 'path';
 import { existsSync } from 'fs';
 
 const execAsync = promisify(exec);
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
 
 // Geçici proje dizini
 const TEMP_DIR = path.join(process.cwd(), 'temp-projects');
@@ -119,11 +118,11 @@ body {
 
 export async function POST(request: Request) {
   try {
-    const { input } = await request.json();
+    const { input, apiKey, model } = await request.json();
 
-    if (!input) {
+    if (!input || !apiKey || !model) {
       return NextResponse.json(
-        { message: 'Input is required' },
+        { message: 'Input, API key and model are required' },
         { status: 400 }
       );
     }
@@ -133,7 +132,9 @@ export async function POST(request: Request) {
       await mkdir(TEMP_DIR, { recursive: true });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // API key ve model ile yeni bir AI instance oluştur
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const modelInstance = genAI.getGenerativeModel({ model });
 
     const prompt = `Generate a Next.js application with the following functionality:
 ${input}
@@ -160,11 +161,11 @@ import type { Metadata } from 'next';
 NO explanations, NO comments outside the code, ONLY the JSON object.`;
 
     console.log('Generating code...');
-    const result = await model.generateContent(prompt);
+    const result = await modelInstance.generateContent(prompt);
     const response = await result.response;
     const text = response.text().trim();
     
-    console.log('Raw response:', text); // Debug için yanıtı logla
+    console.log('Raw response:', text);
     
     console.log('Parsing response...');
     let generatedFiles;
@@ -174,21 +175,20 @@ NO explanations, NO comments outside the code, ONLY the JSON object.`;
       let cleanedText = text;
       if (text.includes('```json')) {
         cleanedText = text
-          .replace(/```json\n/, '')  // Baştaki ```json'ı kaldır
-          .replace(/\n```$/, '')     // Sondaki ```'ı kaldır
+          .replace(/```json\n/, '')
+          .replace(/\n```$/, '')
           .trim();
       }
 
-      // JSON'ı doğrudan parse etmeyi dene
+      // JSON'ı parse et
       try {
         generatedFiles = JSON.parse(cleanedText);
       } catch (parseError) {
-        // Eğer doğrudan parse edemediyse, string'i düzelt ve tekrar dene
         cleanedText = cleanedText
-          .replace(/\\\\/g, '\\')     // Çift ters eğik çizgileri düzelt
-          .replace(/\\"/g, '"')       // Escape edilmiş çift tırnakları düzelt
-          .replace(/\\n/g, '\n')      // \n karakterlerini düzelt
-          .replace(/\t/g, '    ');    // Tab karakterlerini boşluklarla değiştir
+          .replace(/\\\\/g, '\\')
+          .replace(/\\"/g, '"')
+          .replace(/\\n/g, '\n')
+          .replace(/\t/g, '    ');
 
         generatedFiles = JSON.parse(cleanedText);
       }
@@ -208,7 +208,6 @@ NO explanations, NO comments outside the code, ONLY the JSON object.`;
       console.error('Parse error:', error);
       console.error('Raw text:', text);
       
-      // Son bir deneme: eval kullanarak JSON'ı parse et (güvenli bir ortamda)
       try {
         const jsonStr = text.replace(/```json\n?|\n?```/g, '').trim();
         generatedFiles = eval(`(${jsonStr})`);
@@ -242,7 +241,6 @@ NO explanations, NO comments outside the code, ONLY the JSON object.`;
       const fullPath = path.join(projectDir, filePath);
       const fileDir = path.dirname(fullPath);
       
-      // Dosya dizininin var olduğundan emin ol
       if (!existsSync(fileDir)) {
         await mkdir(fileDir, { recursive: true });
       }
@@ -263,14 +261,13 @@ NO explanations, NO comments outside the code, ONLY the JSON object.`;
 
     console.log('Starting development server...');
     try {
-      // Next.js sunucusunu başlat
       startNextServer(projectDir, port);
     } catch (error) {
       console.error('Failed to start server:', error);
       throw new Error('Failed to start development server');
     }
 
-    // Sunucunun başlaması için kısa bir süre bekle
+    // Sunucunun başlaması için bekle
     await new Promise(resolve => setTimeout(resolve, 5000));
 
     console.log('Application ready on port:', port);
