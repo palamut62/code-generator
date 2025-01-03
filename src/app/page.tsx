@@ -708,88 +708,82 @@ export default function Home() {
         <div className="mb-4">
           <div className="bg-[#161b22] border border-[#30363d] rounded-xl shadow-lg">
             <div className="p-4">
-              <div className="flex gap-4">
-                <div className="flex-1">
+              <div className="flex items-center gap-4">
+                <div className="flex-1 relative">
                   <textarea
                     value={loadingSteps || input}
                     onChange={(e) => setInput(e.target.value)}
                     disabled={isGenerating}
-                    placeholder="Describe your application... (e.g., Create a todo app with dark theme) or upload a screenshot"
-                    rows={2}
-                    className={`w-full bg-[#0d1117] text-[#c9d1d9] px-4 py-3 rounded-lg border border-[#30363d] focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] font-mono text-sm resize-none placeholder:text-[#8b949e]/50 ${
+                    placeholder="Describe your application..."
+                    rows={1}
+                    className={`w-full bg-[#0d1117] text-[#c9d1d9] px-4 pr-11 py-3 rounded-lg border border-[#30363d] focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] font-mono text-sm resize-none h-[42px] leading-normal placeholder:text-[#8b949e]/50 overflow-hidden ${
                       isGenerating ? 'animate-pulse' : ''
                     }`}
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                   />
-                  
-                  {/* Görüntü Yükleme Alanı */}
-                  <div className="mt-3 flex items-center gap-4">
-                    <label className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#21262d] text-[#c9d1d9] hover:bg-[#30363d] transition-colors cursor-pointer">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-sm font-mono">Upload Screenshot</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        disabled={isGenerating}
-                      />
-                    </label>
-                    
-                    {imagePreview && (
-                      <div className="relative">
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="h-20 rounded border border-[#30363d]"
-                        />
-                        <button
-                          onClick={clearImage}
-                          className="absolute -top-2 -right-2 p-1 rounded-full bg-[#21262d] text-[#c9d1d9] hover:bg-[#30363d] transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <label className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8b949e] hover:text-white cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={isGenerating}
+                    />
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </label>
 
-                  {isGenerating && (
-                    <div className="mt-2 flex items-center gap-2 text-[#58a6ff] text-xs font-mono">
-                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent"></div>
-                      <span>{loadingSteps}</span>
+                  {imagePreview && (
+                    <div className="absolute right-12 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="h-6 w-6 rounded object-cover border border-[#30363d]"
+                      />
+                      <button
+                        onClick={clearImage}
+                        className="p-1 rounded-full bg-[#21262d] text-[#c9d1d9] hover:bg-[#30363d] transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
                     </div>
                   )}
                 </div>
 
-                <div className="flex flex-col justify-center">
-                  <button
-                    onClick={handleSubmit}
-                    disabled={isGenerating || (!input.trim() && !imageFile) || !apiSettings}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-mono text-sm transition-all duration-200 h-[42px] ${
-                      isGenerating || (!input.trim() && !imageFile) || !apiSettings
-                        ? 'bg-[#21262d] text-[#8b949e] cursor-not-allowed'
-                        : 'bg-[#238636] text-white hover:bg-[#2ea043] shadow-lg hover:shadow-xl hover:shadow-[#238636]/20'
-                    }`}
-                  >
-                    {isGenerating ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                        <span>Generating...</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                        <span>Generate</span>
-                      </>
-                    )}
-                  </button>
-                </div>
+                <button
+                  onClick={handleSubmit}
+                  disabled={isGenerating || (!input.trim() && !imageFile) || !apiSettings}
+                  className={`flex items-center justify-center gap-2 px-6 h-[42px] rounded-lg font-mono text-sm transition-all duration-200 min-w-[140px] ${
+                    isGenerating || (!input.trim() && !imageFile) || !apiSettings
+                      ? 'bg-[#21262d] text-[#8b949e] cursor-not-allowed'
+                      : 'bg-gradient-to-r from-[#238636] to-[#2ea043] text-white hover:from-[#2ea043] hover:to-[#238636] shadow-lg hover:shadow-xl hover:shadow-[#238636]/20'
+                  }`}
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>Generate Code</span>
+                    </>
+                  )}
+                </button>
               </div>
+
+              {isGenerating && (
+                <div className="mt-2 flex items-center gap-2 text-[#58a6ff] text-xs font-mono">
+                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent"></div>
+                  <span>{loadingSteps}</span>
+                </div>
+              )}
 
               {error && (
                 <div className="mt-3 flex items-center gap-2 text-red-400">
