@@ -703,7 +703,7 @@ export default function Home() {
       </nav>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-[1400px] mx-auto w-full px-6 py-4">
+      <main className="flex-1 max-w-[1400px] mx-auto w-full px-4 py-3 flex flex-col h-[calc(100vh-3.5rem)]">
         {/* Input Section */}
         <div className="mb-4">
           <div className="bg-[#161b22] border border-[#30363d] rounded-xl shadow-lg">
@@ -798,20 +798,36 @@ export default function Home() {
         </div>
 
         {/* Code and Preview Sections */}
-        <div className="grid grid-cols-2 gap-4 h-[calc(100vh-220px)]">
-          {/* Code Section */}
-          <div className="bg-[#161b22] border border-[#30363d] rounded-xl shadow-lg overflow-hidden">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 mb-3">
+          {/* Sol Panel - Kod Editörü */}
+          <div className="h-[calc(50vh-5rem)] lg:h-[calc(100vh-15rem)] bg-[#0d1117] rounded-lg border border-[#30363d] overflow-hidden">
             <div className="h-full flex">
               {/* File Sidebar */}
-              <div className="w-80 border-r border-[#30363d] bg-[#161b22] overflow-y-auto relative z-10">
-                <div className="p-3">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-[#8b949e] text-xs font-mono uppercase">Project Files</h3>
-                    <div className="flex items-center gap-2">
+              <div className="w-80 border-r border-[#30363d] bg-[#161b22] overflow-y-auto relative z-20">
+                <div className="p-3 relative">
+                  <div className="flex items-center justify-between mb-3 relative z-30">
+                    <h3 className="text-[#8b949e] text-xs font-mono uppercase flex items-center gap-2">
+                      Project Files
+                      {selectedProject && (
+                        <button
+                          onClick={() => handleDeleteProject(selectedProject)}
+                          disabled={loading}
+                          className={`flex items-center justify-center bg-[#0d1117] text-red-400 hover:text-red-300 p-1 rounded border border-[#30363d] hover:bg-[#21262d] transition-all duration-200 ${
+                            loading ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                          title="Delete project"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
+                    </h3>
+                    <div className="flex items-center gap-2 relative z-30">
                       <select
                         value={selectedProject || ''}
                         onChange={(e) => handleProjectChange(e.target.value)}
-                        className="bg-[#0d1117] text-[#8b949e] px-3 py-1 rounded border border-[#30363d] text-xs font-mono focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] min-w-[120px]"
+                        className="w-full bg-[#0d1117] text-[#8b949e] px-3 py-1 rounded border border-[#30363d] text-xs font-mono focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]"
                       >
                         <option value="">Select...</option>
                         {projects.map((project) => (
@@ -820,20 +836,6 @@ export default function Home() {
                           </option>
                         ))}
                       </select>
-                      {selectedProject && (
-                        <button
-                          onClick={() => handleDeleteProject(selectedProject)}
-                          disabled={loading}
-                          className={`text-red-400 hover:text-red-300 p-1.5 rounded hover:bg-[#1f2428] ${
-                            loading ? 'opacity-50 cursor-not-allowed' : ''
-                          }`}
-                          title="Delete project"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      )}
                     </div>
                   </div>
                   {selectedProject && projects.find(p => p.id === selectedProject)?.files ? (
@@ -968,8 +970,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Preview Section */}
-          <div className="bg-[#161b22] border border-[#30363d] rounded-xl shadow-lg overflow-hidden">
+          {/* Sağ Panel - Önizleme */}
+          <div className="h-[calc(50vh-5rem)] lg:h-[calc(100vh-15rem)] bg-[#0d1117] rounded-lg border border-[#30363d] overflow-hidden">
             <div className="border-b border-[#30363d] bg-[#161b22] p-3 flex justify-between items-center">
               <h2 className="text-white font-mono text-sm">Preview</h2>
               {selectedProject && (
@@ -1022,7 +1024,7 @@ export default function Home() {
         </div>
 
         {/* Status Bar */}
-        <div className="mt-4 bg-[#161b22] border border-[#30363d] rounded-lg p-3 flex items-center justify-between text-[#8b949e] text-sm font-mono">
+        <div className="h-7 bg-[#161b22] border border-[#30363d] rounded-lg flex items-center justify-between px-3 text-[#8b949e] text-[11px] font-mono">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
