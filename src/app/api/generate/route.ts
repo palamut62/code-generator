@@ -35,39 +35,139 @@ const baseFiles = {
     "scripts": {
       "dev": "next dev",
       "build": "next build",
-      "start": "next start"
+      "start": "next start",
+      "lint": "next lint"
     },
     "dependencies": {
       "next": "14.0.4",
       "react": "^18.2.0",
-      "react-dom": "^18.2.0"
+      "react-dom": "^18.2.0",
+      "@headlessui/react": "^1.7.17",
+      "@heroicons/react": "^2.1.1",
+      "@hookform/resolvers": "^3.3.2",
+      "@radix-ui/react-dialog": "^1.0.5",
+      "@radix-ui/react-dropdown-menu": "^2.0.6",
+      "@radix-ui/react-label": "^2.0.2",
+      "@radix-ui/react-slot": "^1.0.2",
+      "axios": "^1.6.2",
+      "class-variance-authority": "^0.7.0",
+      "clsx": "^2.0.0",
+      "framer-motion": "^10.16.16",
+      "lucide-react": "^0.298.0",
+      "next-themes": "^0.2.1",
+      "react-hook-form": "^7.49.2",
+      "react-hot-toast": "^2.4.1",
+      "react-icons": "^4.12.0",
+      "react-toastify": "^9.1.3",
+      "tailwind-merge": "^2.1.0",
+      "zod": "^3.22.4",
+      "@tanstack/react-query": "^5.14.2",
+      "zustand": "^4.4.7",
+      "uuid": "^9.0.1",
+      "nanoid": "^5.0.4",
+      "date-fns": "^2.30.0",
+      "lodash": "^4.17.21"
     },
     "devDependencies": {
       "@types/node": "^20.10.6",
       "@types/react": "^18.2.46",
       "@types/react-dom": "^18.2.18",
+      "@types/uuid": "^9.0.7",
+      "@types/lodash": "^4.14.202",
       "autoprefixer": "^10.4.16",
       "postcss": "^8.4.32",
       "tailwindcss": "^3.4.0",
-      "typescript": "^5.3.3"
+      "typescript": "^5.3.3",
+      "@tailwindcss/forms": "^0.5.7",
+      "@tailwindcss/typography": "^0.5.10",
+      "@types/react-query": "^1.2.9",
+      "prettier": "^3.1.1",
+      "prettier-plugin-tailwindcss": "^0.5.9"
     }
   }`,
   'next.config.js': `/** @type {import('next').NextConfig} */
   const nextConfig = {}
   module.exports = nextConfig`,
   'tailwind.config.ts': `import type { Config } from 'tailwindcss'
-  const config: Config = {
-    content: [
-      './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
-      './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-      './src/app/**/*.{js,ts,jsx,tsx,mdx}',
-    ],
-    theme: {
-      extend: {},
+
+const config: Config = {
+  content: [
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      container: {
+        center: true,
+        padding: '1rem',
+        screens: {
+          '2xl': '1400px',
+        },
+      },
+      colors: {
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
+      },
+      borderRadius: {
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+      },
+      keyframes: {
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
+        },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
+        },
+      },
+      animation: {
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
+      },
     },
-    plugins: [],
-  }
-  export default config`,
+  },
+  plugins: [
+    require('@tailwindcss/typography'),
+    require('@tailwindcss/forms'),
+  ],
+}
+
+export default config`,
   'postcss.config.js': `module.exports = {
     plugins: {
       tailwindcss: {},
@@ -104,15 +204,86 @@ const baseFiles = {
   'src/app/globals.css': `@tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-rgb: 255, 255, 255;
+ 
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+ 
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+ 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
+@layer components {
+  .container {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+}`,
+  'src/lib/utils.ts': `import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+ 
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}`,
+  'prettier.config.js': `module.exports = {
+  plugins: ['prettier-plugin-tailwindcss'],
+  semi: false,
+  singleQuote: true,
+  tabWidth: 2,
+  trailingComma: 'es5',
+}`,
+  '.prettierrc': `{
+  "semi": false,
+  "singleQuote": true,
+  "tabWidth": 2,
+  "trailingComma": "es5"
 }`
 };
 
@@ -215,28 +386,310 @@ NO explanations, NO comments outside the code, ONLY the JSON object.`;
         }
       } else {
         // Normal metin prompt'u
-        prompt = `Generate a Next.js application with the following functionality:
+        prompt = `Analyze the following request and create a professional Next.js application:
 ${input}
 
-Return ONLY a JSON object with two files. Format:
+First, determine the type of application and its requirements:
+[Previous analysis sections remain the same...]
+
+Implementation Guidelines:
+1. Required Files Generation:
+   For EACH component/feature:
+   - Main Component File
+   - Related Hook Files
+   - Required Utility Functions
+   - Necessary Types
+   - Store/State Management
+   - Helper Functions
+   - Constants
+   - Styles (if needed)
+   - Tests (if needed)
+
+2. Dependencies Check:
+   For EACH imported module:
+   - Verify the import path exists
+   - Check if module is installed in package.json
+   - Add required @types packages for TypeScript
+   - Common utility packages to include:
+     * uuid (for unique IDs)
+     * nanoid (for shorter unique IDs)
+     * date-fns (for date manipulation)
+     * lodash (for utility functions)
+     * react-toastify (for notifications)
+     * react-hot-toast (for toast notifications)
+     * axios (for HTTP requests)
+     * zod (for validation)
+
+3. Hook Implementation:
+   Common Custom Hooks with FULL implementation:
+
+   useDebounce.ts:
+   \`\`\`typescript
+   import { useState, useEffect } from 'react';
+   
+   export function useDebounce<T>(value: T, delay: number): T {
+     const [debouncedValue, setDebouncedValue] = useState<T>(value);
+   
+     useEffect(() => {
+       const handler = setTimeout(() => {
+         setDebouncedValue(value);
+       }, delay);
+   
+       return () => {
+         clearTimeout(handler);
+       };
+     }, [value, delay]);
+   
+     return debouncedValue;
+   }
+   \`\`\`
+
+   useMounted.ts:
+   \`\`\`typescript
+   import { useEffect, useState } from 'react';
+   
+   export function useMounted() {
+     const [mounted, setMounted] = useState(false);
+   
+     useEffect(() => {
+       setMounted(true);
+       return () => setMounted(false);
+     }, []);
+   
+     return mounted;
+   }
+   \`\`\`
+
+   useLocalStorage.ts:
+   \`\`\`typescript
+   import { useState, useEffect } from 'react';
+   
+   export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
+     const [storedValue, setStoredValue] = useState<T>(() => {
+       if (typeof window === 'undefined') return initialValue;
+       
+       try {
+         const item = window.localStorage.getItem(key);
+         return item ? JSON.parse(item) : initialValue;
+       } catch (error) {
+         console.error(error);
+         return initialValue;
+       }
+     });
+   
+     useEffect(() => {
+       try {
+         window.localStorage.setItem(key, JSON.stringify(storedValue));
+       } catch (error) {
+         console.error(error);
+       }
+     }, [key, storedValue]);
+   
+     return [storedValue, setStoredValue];
+   }
+   \`\`\`
+
+   useMediaQuery.ts:
+   \`\`\`typescript
+   import { useState, useEffect } from 'react';
+   
+   export function useMediaQuery(query: string): boolean {
+     const [matches, setMatches] = useState(false);
+   
+     useEffect(() => {
+       const media = window.matchMedia(query);
+       if (media.matches !== matches) {
+         setMatches(media.matches);
+       }
+   
+       const listener = () => setMatches(media.matches);
+       media.addEventListener('change', listener);
+   
+       return () => media.removeEventListener('change', listener);
+     }, [matches, query]);
+   
+     return matches;
+   }
+   \`\`\`
+
+   useOnScreen.ts:
+   \`\`\`typescript
+   import { useState, useEffect, RefObject } from 'react';
+   
+   export function useOnScreen<T extends Element>(
+     ref: RefObject<T>,
+     rootMargin: string = '0px'
+   ): boolean {
+     const [isIntersecting, setIntersecting] = useState<boolean>(false);
+   
+     useEffect(() => {
+       const observer = new IntersectionObserver(
+         ([entry]) => {
+           setIntersecting(entry.isIntersecting);
+         },
+         {
+           rootMargin,
+         }
+       );
+   
+       if (ref.current) {
+         observer.observe(ref.current);
+       }
+   
+       return () => {
+         if (ref.current) {
+           observer.unobserve(ref.current);
+         }
+       };
+     }, [ref, rootMargin]);
+   
+     return isIntersecting;
+   }
+   \`\`\`
+
+   useKeyPress.ts:
+   \`\`\`typescript
+   import { useState, useEffect } from 'react';
+   
+   export function useKeyPress(targetKey: string): boolean {
+     const [keyPressed, setKeyPressed] = useState(false);
+   
+     useEffect(() => {
+       const downHandler = ({ key }: KeyboardEvent) => {
+         if (key === targetKey) {
+           setKeyPressed(true);
+         }
+       };
+   
+       const upHandler = ({ key }: KeyboardEvent) => {
+         if (key === targetKey) {
+           setKeyPressed(false);
+         }
+       };
+   
+       window.addEventListener('keydown', downHandler);
+       window.addEventListener('keyup', upHandler);
+   
+       return () => {
+         window.removeEventListener('keydown', downHandler);
+         window.removeEventListener('keyup', upHandler);
+       };
+     }, [targetKey]);
+   
+     return keyPressed;
+   }
+   \`\`\`
+
+   useClickOutside.ts:
+   \`\`\`typescript
+   import { useEffect, RefObject } from 'react';
+   
+   export function useClickOutside<T extends HTMLElement>(
+     ref: RefObject<T>,
+     handler: (event: MouseEvent | TouchEvent) => void
+   ): void {
+     useEffect(() => {
+       const listener = (event: MouseEvent | TouchEvent) => {
+         if (!ref.current || ref.current.contains(event.target as Node)) {
+           return;
+         }
+         handler(event);
+       };
+   
+       document.addEventListener('mousedown', listener);
+       document.addEventListener('touchstart', listener);
+   
+       return () => {
+         document.removeEventListener('mousedown', listener);
+         document.removeEventListener('touchstart', listener);
+       };
+     }, [ref, handler]);
+   }
+   \`\`\`
+
+4. Utility Functions:
+   Common Utils:
+   - formatters (date, number, currency)
+   - validators (input, form, data)
+   - animations (transitions, effects)
+   - storage (local, session)
+   - api (axios instances, fetchers)
+   - events (custom event handlers)
+   - constants (configuration, settings)
+   - helpers (common functions)
+
+5. Component Dependencies:
+   For EACH component, include:
+   - Required hooks
+   - Required utils
+   - Required types
+   - Required constants
+   - Required store
+   - Required styles
+
+Generate ALL necessary files based on the analyzed requirements. Example structure:
 {
-  "src/app/page.tsx": "// page code",
-  "src/app/layout.tsx": "// layout code"
+  // Core App Files
+  "src/app/layout.tsx": "// Root layout with providers",
+  "src/app/page.tsx": "// Main page",
+  
+  // Features
+  "src/components/features/client/[Feature].tsx": "'use client';\n// Feature implementation",
+  
+  // Custom Hooks (Create ALL required hooks)
+  "src/lib/hooks/use-interval.ts": "// Interval hook implementation",
+  "src/lib/hooks/use-debounce.ts": "// Debounce hook implementation",
+  "src/lib/hooks/use-media-query.ts": "// Media query hook implementation",
+  "src/lib/hooks/use-local-storage.ts": "// Local storage hook implementation",
+  "src/lib/hooks/use-previous.ts": "// Previous value hook implementation",
+  "src/lib/hooks/use-window-size.ts": "// Window size hook implementation",
+  "src/lib/hooks/use-mounted.ts": "// Mounted hook implementation",
+  "src/lib/hooks/use-click-outside.ts": "// Click outside hook implementation",
+  "src/lib/hooks/use-key-press.ts": "// Key press hook implementation",
+  "src/lib/hooks/use-on-screen.ts": "// On screen hook implementation",
+  
+  // Utils (Create ALL required utils)
+  "src/lib/utils/formatters.ts": "// Formatting utilities",
+  "src/lib/utils/validators.ts": "// Validation utilities",
+  "src/lib/utils/animations.ts": "// Animation utilities",
+  "src/lib/utils/storage.ts": "// Storage utilities",
+  "src/lib/utils/api.ts": "// API utilities",
+  "src/lib/utils/events.ts": "// Event utilities",
+  
+  // Constants
+  "src/lib/constants/[feature].ts": "// Feature-specific constants",
+  "src/lib/constants/config.ts": "// Global configuration",
+  
+  // Types
+  "src/types/[feature].ts": "// Feature-specific types",
+  "src/types/common.ts": "// Common types",
+  
+  // Store
+  "src/store/[feature].ts": "'use client';\n// Feature-specific store",
+  
+  // Styles
+  "src/styles/[feature].css": "// Feature-specific styles",
+  
+  // Components
+  "src/components/ui/client/[Component].tsx": "'use client';\n// UI components",
+  
+  // Services
+  "src/lib/services/[service].ts": "// Service implementation"
 }
 
-File requirements:
-page.tsx:
-'use client';
-import { useState } from 'react';
-// Add more imports as needed
-// Include full component code with Tailwind CSS styling
+Critical Requirements:
+1. Include FULL implementation of ALL custom hooks
+2. Export ALL hooks properly
+3. Add proper TypeScript types for ALL hooks
+4. Add proper error handling in hooks
+5. Add proper cleanup in useEffect
+6. Add proper type safety
+7. Add proper documentation
+8. Add proper examples
+9. Add proper tests
+10. Optimize for performance
 
-layout.tsx:
-import './globals.css';
-import type { Metadata } from 'next';
-// Include full layout code with metadata
-
-NO explanations, NO comments outside the code, ONLY the JSON object.`;
+NO explanations, NO comments outside the code, ONLY the JSON object with ALL necessary files based on the analyzed requirements.`;
       }
 
       console.log('Generating code...');

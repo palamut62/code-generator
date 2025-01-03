@@ -424,7 +424,18 @@ export default function Home() {
 
     try {
       setIsDownloading(true);
+      setLoadingStatus('Stopping application...');
 
+      // Önce uygulamayı durdur
+      await fetch('/api/stop-project', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ projectId: selectedProject }),
+      });
+
+      setLoadingStatus('Preparing download...');
       const response = await fetch('/api/download', {
         method: 'POST',
         headers: {
@@ -437,10 +448,8 @@ export default function Home() {
         throw new Error('Failed to download project');
       }
 
-      // Blob olarak yanıtı al
+      setLoadingStatus('Downloading project...');
       const blob = await response.blob();
-
-      // Download link oluştur
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -450,11 +459,28 @@ export default function Home() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
+      // İndirme tamamlandıktan sonra uygulamayı yeniden başlat
+      setLoadingStatus('Restarting application...');
+      const project = projects.find(p => p.id === selectedProject);
+      if (project) {
+        await fetch('/api/start-project', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            projectId: selectedProject,
+            port: project.port
+          }),
+        });
+      }
+
     } catch (error) {
       console.error('Error downloading project:', error);
       setError(error instanceof Error ? error.message : 'Failed to download project');
     } finally {
       setIsDownloading(false);
+      setLoadingStatus('');
     }
   };
 
