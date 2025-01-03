@@ -1,6 +1,24 @@
 import { NextResponse } from 'next/server';
 import path from 'path';
 import { promises as fs } from 'fs';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
+
+const killProcessOnPort = async (port: number) => {
+  try {
+    if (process.platform === 'win32') {
+      // Windows için port'u kullanan process'i bul ve sonlandır
+      await execAsync(`for /f "tokens=5" %a in ('netstat -aon ^| find ":${port}" ^| find "LISTENING"') do taskkill /F /PID %a`);
+    } else {
+      // Linux/Mac için
+      await execAsync(`lsof -ti:${port} | xargs kill -9`);
+    }
+  } catch (error) {
+    console.warn(`No process found on port ${port} or failed to kill:`, error);
+  }
+};
 
 export async function POST(request: Request) {
   try {
@@ -12,29 +30,19 @@ export async function POST(request: Request) {
 
     const tempDir = path.join(process.cwd(), 'temp-projects');
     const projectDir = path.join(tempDir, projectId);
-    const pidFile = path.join(projectDir, '.pid');
 
-    // PID dosyasını kontrol et
+    // package.json'dan port numarasını al
     try {
-      const pidContent = await fs.readFile(pidFile, 'utf-8');
-      const pid = parseInt(pidContent.trim(), 10);
+      const packageJsonPath = path.join(projectDir, 'package.json');
+      const packageJsonContent = await fs.readFile(packageJsonPath, 'utf-8');
+      const packageJson = JSON.parse(packageJsonContent);
+      const port = packageJson.config?.port;
 
-      // Process'i sonlandır
-      try {
-        process.kill(pid);
-        console.log(`Stopped process with PID: ${pid}`);
-      } catch (error) {
-        console.warn(`Process with PID ${pid} not found or already stopped`);
-      }
-
-      // PID dosyasını sil
-      try {
-        await fs.unlink(pidFile);
-      } catch (error) {
-        console.warn('Failed to delete PID file:', error);
+      if (port) {
+        await killProcessOnPort(port);
       }
     } catch (error) {
-      console.warn('No PID file found or failed to read:', error);
+      console.warn('Failed to read package.json or kill process:', error);
     }
 
     return NextResponse.json({ success: true });

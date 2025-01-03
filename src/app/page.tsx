@@ -200,6 +200,8 @@ const CurrentTime = () => {
 
 export default function Home() {
   const [input, setInput] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [files, setFiles] = useState<Record<string, string>>({});
   const [selectedFile, setSelectedFile] = useState('src/app/page.tsx');
   const [previewUrl, setPreviewUrl] = useState('');
@@ -340,32 +342,51 @@ export default function Home() {
     }
   };
 
+  // Görüntü yükleme işleyicisi
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Görüntüyü temizle
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
   const handleSubmit = async () => {
-    if (!input.trim() || isGenerating || !apiSettings) return;
+    if ((!input.trim() && !imageFile) || isGenerating || !apiSettings) return;
 
     try {
       setIsGenerating(true);
       setError(null);
-      setLoadingSteps('Generating code...');
+      setLoadingSteps('Analyzing design...');
+
+      const formData = new FormData();
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+      formData.append('input', input);
+      formData.append('apiKey', apiSettings.apiKey);
+      formData.append('model', apiSettings.model);
 
       const response = await fetch('/api/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          input,
-          apiKey: apiSettings.apiKey,
-          model: apiSettings.model
-        }),
+        body: formData,
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to generate application');
-      }
-
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Failed to generate application');
+      }
 
       setLoadingSteps('Installing dependencies...');
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -386,6 +407,7 @@ export default function Home() {
       setFiles(data.files);
       setPreviewUrl(`http://localhost:${data.port}`);
       setInput('');
+      clearImage();
       setLoadingSteps('');
 
     } catch (error) {
@@ -692,12 +714,48 @@ export default function Home() {
                     value={loadingSteps || input}
                     onChange={(e) => setInput(e.target.value)}
                     disabled={isGenerating}
-                    placeholder="Describe your application... (e.g., Create a todo app with dark theme)"
+                    placeholder="Describe your application... (e.g., Create a todo app with dark theme) or upload a screenshot"
                     rows={2}
                     className={`w-full bg-[#0d1117] text-[#c9d1d9] px-4 py-3 rounded-lg border border-[#30363d] focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] font-mono text-sm resize-none placeholder:text-[#8b949e]/50 ${
                       isGenerating ? 'animate-pulse' : ''
                     }`}
                   />
+                  
+                  {/* Görüntü Yükleme Alanı */}
+                  <div className="mt-3 flex items-center gap-4">
+                    <label className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#21262d] text-[#c9d1d9] hover:bg-[#30363d] transition-colors cursor-pointer">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-sm font-mono">Upload Screenshot</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        disabled={isGenerating}
+                      />
+                    </label>
+                    
+                    {imagePreview && (
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="h-20 rounded border border-[#30363d]"
+                        />
+                        <button
+                          onClick={clearImage}
+                          className="absolute -top-2 -right-2 p-1 rounded-full bg-[#21262d] text-[#c9d1d9] hover:bg-[#30363d] transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   {isGenerating && (
                     <div className="mt-2 flex items-center gap-2 text-[#58a6ff] text-xs font-mono">
                       <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent"></div>
@@ -709,9 +767,9 @@ export default function Home() {
                 <div className="flex flex-col justify-center">
                   <button
                     onClick={handleSubmit}
-                    disabled={isGenerating || !input.trim() || !apiSettings}
+                    disabled={isGenerating || (!input.trim() && !imageFile) || !apiSettings}
                     className={`flex items-center gap-2 px-6 py-3 rounded-lg font-mono text-sm transition-all duration-200 h-[42px] ${
-                      isGenerating || !input.trim() || !apiSettings
+                      isGenerating || (!input.trim() && !imageFile) || !apiSettings
                         ? 'bg-[#21262d] text-[#8b949e] cursor-not-allowed'
                         : 'bg-[#238636] text-white hover:bg-[#2ea043] shadow-lg hover:shadow-xl hover:shadow-[#238636]/20'
                     }`}

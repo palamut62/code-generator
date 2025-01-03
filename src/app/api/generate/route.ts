@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir, readFile } from 'fs/promises';
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
@@ -116,15 +116,54 @@ body {
 }`
 };
 
+// Proje adı oluşturma fonksiyonu
+const createProjectName = (input: string): string => {
+  // Girişten ilk 3 kelimeyi al ve küçük harfe çevir
+  const words = input.toLowerCase()
+    .replace(/[^a-zA-Z0-9\s]/g, '') // Özel karakterleri kaldır
+    .split(/\s+/)
+    .slice(0, 3)
+    .join('-');
+
+  // Benzersiz kod oluştur (son 6 karakter)
+  const uniqueCode = Date.now().toString(36).slice(-6);
+
+  return `${words}-${uniqueCode}`;
+};
+
 export async function POST(request: Request) {
   try {
-    const { input, apiKey, model } = await request.json();
+    const formData = await request.formData();
+    const image = formData.get('image') as File | null;
+    const input = formData.get('input') as string;
+    const apiKey = formData.get('apiKey') as string;
+    const model = formData.get('model') as string;
 
-    if (!input || !apiKey || !model) {
+    // Giriş kontrolü
+    if ((!input && !image) || !apiKey || !model) {
       return NextResponse.json(
-        { error: 'Input, API key and model are required' },
+        { error: 'Input/Image, API key and model are required' },
         { status: 400 }
       );
+    }
+
+    // Görüntü kontrolü
+    if (image) {
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (image.size > maxSize) {
+        return NextResponse.json(
+          { error: 'Image size should be less than 5MB' },
+          { status: 400 }
+        );
+      }
+
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!validTypes.includes(image.type)) {
+        return NextResponse.json(
+          { error: 'Only JPEG, PNG and WebP images are supported' },
+          { status: 400 }
+        );
+      }
     }
 
     // Ana temp dizinini oluştur
@@ -132,11 +171,51 @@ export async function POST(request: Request) {
       await mkdir(TEMP_DIR, { recursive: true });
     }
 
-    // API key ve model ile yeni bir AI instance oluştur
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const modelInstance = genAI.getGenerativeModel({ model });
+    try {
+      // API key ve model ile yeni bir AI instance oluştur
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const modelInstance = genAI.getGenerativeModel({ model });
 
-    const prompt = `Generate a Next.js application with the following functionality:
+      let prompt = '';
+
+      if (image) {
+        try {
+          // Görüntüyü base64'e dönüştür
+          const imageBytes = await image.arrayBuffer();
+          const imageBase64 = Buffer.from(imageBytes).toString('base64');
+
+          // Görüntü analizi için prompt
+          prompt = `I have a screenshot of a web application. Please analyze this image and create a Next.js application that looks exactly like it.
+The image is provided in base64 format. Please analyze the layout, components, styling, and functionality visible in the screenshot.
+Create a pixel-perfect implementation using Next.js, React and Tailwind CSS.
+
+Image data: ${imageBase64}
+
+Return ONLY a JSON object with two files. Format:
+{
+  "src/app/page.tsx": "// page code",
+  "src/app/layout.tsx": "// layout code"
+}
+
+Requirements:
+1. Use Tailwind CSS for styling
+2. Make it responsive
+3. Implement exact colors, spacing, and typography
+4. Include all visible functionality
+5. Add proper animations and transitions
+6. Ensure accessibility
+
+NO explanations, NO comments outside the code, ONLY the JSON object.`;
+        } catch (error) {
+          console.error('Error processing image:', error);
+          return NextResponse.json(
+            { error: 'Failed to process image' },
+            { status: 500 }
+          );
+        }
+      } else {
+        // Normal metin prompt'u
+        prompt = `Generate a Next.js application with the following functionality:
 ${input}
 
 Return ONLY a JSON object with two files. Format:
@@ -146,7 +225,6 @@ Return ONLY a JSON object with two files. Format:
 }
 
 File requirements:
-
 page.tsx:
 'use client';
 import { useState } from 'react';
@@ -159,129 +237,159 @@ import type { Metadata } from 'next';
 // Include full layout code with metadata
 
 NO explanations, NO comments outside the code, ONLY the JSON object.`;
-
-    console.log('Generating code...');
-    const result = await modelInstance.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text().trim();
-    
-    console.log('Raw response:', text);
-    
-    console.log('Parsing response...');
-    let generatedFiles;
-    
-    try {
-      // Markdown kod bloklarını temizle
-      let cleanedText = text;
-      if (text.includes('```json')) {
-        cleanedText = text
-          .replace(/```json\n/, '')
-          .replace(/\n```$/, '')
-          .trim();
       }
 
-      // JSON'ı parse et
-      try {
-        generatedFiles = JSON.parse(cleanedText);
-      } catch (parseError) {
-        cleanedText = cleanedText
-          .replace(/\\\\/g, '\\')
-          .replace(/\\"/g, '"')
-          .replace(/\\n/g, '\n')
-          .replace(/\t/g, '    ');
-
-        generatedFiles = JSON.parse(cleanedText);
+      console.log('Generating code...');
+      const result = await modelInstance.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text().trim();
+      
+      if (!text) {
+        throw new Error('AI returned empty response');
       }
 
-      // Dosya kontrolü
-      if (!generatedFiles['src/app/page.tsx'] || !generatedFiles['src/app/layout.tsx']) {
-        throw new Error('Missing required files in the response');
-      }
-
-      // String kontrolü
-      if (typeof generatedFiles['src/app/page.tsx'] !== 'string' || 
-          typeof generatedFiles['src/app/layout.tsx'] !== 'string') {
-        throw new Error('File contents must be strings');
-      }
-
-    } catch (error: unknown) {
-      console.error('Parse error:', error);
-      console.error('Raw text:', text);
+      console.log('Parsing response...');
+      let generatedFiles;
       
       try {
-        const jsonStr = text.replace(/```json\n?|\n?```/g, '').trim();
-        generatedFiles = eval(`(${jsonStr})`);
-        
-        if (!generatedFiles || typeof generatedFiles !== 'object') {
-          throw new Error('Invalid JSON structure');
+        // Markdown kod bloklarını temizle
+        let cleanedText = text;
+        if (text.includes('```json')) {
+          cleanedText = text
+            .replace(/```json\n/, '')
+            .replace(/\n```$/, '')
+            .trim();
         }
-      } catch (evalError) {
-        throw new Error(`Failed to parse JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
+
+        // JSON'ı parse et
+        try {
+          generatedFiles = JSON.parse(cleanedText);
+        } catch (parseError) {
+          cleanedText = cleanedText
+            .replace(/\\\\/g, '\\')
+            .replace(/\\"/g, '"')
+            .replace(/\\n/g, '\n')
+            .replace(/\t/g, '    ');
+
+          generatedFiles = JSON.parse(cleanedText);
+        }
+
+        // Dosya kontrolü
+        if (!generatedFiles['src/app/page.tsx'] || !generatedFiles['src/app/layout.tsx']) {
+          throw new Error('Missing required files in the response');
+        }
+
+        // String kontrolü
+        if (typeof generatedFiles['src/app/page.tsx'] !== 'string' || 
+            typeof generatedFiles['src/app/layout.tsx'] !== 'string') {
+          throw new Error('File contents must be strings');
+        }
+
+      } catch (error) {
+        console.error('Parse error:', error);
+        console.error('Raw text:', text);
+        return NextResponse.json(
+          { error: 'Failed to parse AI response' },
+          { status: 500 }
+        );
       }
-    }
 
-    // Tüm dosyaları birleştir
-    const filesContent = {
-      ...baseFiles,
-      ...generatedFiles
-    };
+      // Tüm dosyaları birleştir
+      const filesContent = {
+        ...baseFiles,
+        ...generatedFiles
+      };
 
-    // Proje için benzersiz bir dizin oluştur
-    const projectId = Date.now().toString();
-    const projectDir = path.join(TEMP_DIR, projectId);
-    console.log('Creating project directory:', projectDir);
+      // Proje için anlamlı bir isim oluştur
+      const projectId = createProjectName(input || 'image-project');
+      const projectDir = path.join(TEMP_DIR, projectId);
+      console.log('Creating project directory:', projectDir);
 
-    // Dizin yapısını oluştur
-    await mkdir(projectDir, { recursive: true });
-    await mkdir(path.join(projectDir, 'src', 'app'), { recursive: true });
+      try {
+        // Dizin yapısını oluştur
+        await mkdir(projectDir, { recursive: true });
+        await mkdir(path.join(projectDir, 'src', 'app'), { recursive: true });
 
-    // Dosyaları yaz
-    console.log('Writing files...');
-    for (const [filePath, content] of Object.entries(filesContent)) {
-      const fullPath = path.join(projectDir, filePath);
-      const fileDir = path.dirname(fullPath);
-      
-      if (!existsSync(fileDir)) {
-        await mkdir(fileDir, { recursive: true });
+        // package.json'ı güncelle
+        const packageJson = JSON.parse(baseFiles['package.json']);
+        packageJson.name = projectId;
+        filesContent['package.json'] = JSON.stringify(packageJson, null, 2);
+
+        // Dosyaları yaz
+        console.log('Writing files...');
+        for (const [filePath, content] of Object.entries(filesContent)) {
+          const fullPath = path.join(projectDir, filePath);
+          const fileDir = path.dirname(fullPath);
+          
+          if (!existsSync(fileDir)) {
+            await mkdir(fileDir, { recursive: true });
+          }
+
+          await writeFile(fullPath, content as string);
+        }
+      } catch (error) {
+        console.error('Error creating project files:', error);
+        return NextResponse.json(
+          { error: 'Failed to create project files' },
+          { status: 500 }
+        );
       }
 
-      await writeFile(fullPath, content as string);
-    }
+      // Port numarası al
+      const port = getNextPort();
 
-    // Port numarası al
-    const port = getNextPort();
+      // package.json'a port numarasını ekle
+      const packageJsonPath = path.join(projectDir, 'package.json');
+      const packageJsonContent = await readFile(packageJsonPath, 'utf-8');
+      const packageJson = JSON.parse(packageJsonContent);
+      packageJson.config = { port };
+      await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
-    console.log('Installing dependencies...');
-    try {
-      await execAsync('npm install', { cwd: projectDir });
+      console.log('Installing dependencies...');
+      try {
+        await execAsync('npm install', { cwd: projectDir });
+      } catch (error) {
+        console.error('npm install failed:', error);
+        return NextResponse.json(
+          { error: 'Failed to install dependencies' },
+          { status: 500 }
+        );
+      }
+
+      console.log('Starting development server...');
+      try {
+        startNextServer(projectDir, port);
+      } catch (error) {
+        console.error('Failed to start server:', error);
+        return NextResponse.json(
+          { error: 'Failed to start development server' },
+          { status: 500 }
+        );
+      }
+
+      // Sunucunun başlaması için bekle
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      console.log('Application ready on port:', port);
+      return NextResponse.json({
+        projectId,
+        port,
+        files: filesContent
+      });
+
     } catch (error) {
-      console.error('npm install failed:', error);
-      throw new Error('Failed to install dependencies');
+      console.error('AI Error:', error);
+      return NextResponse.json(
+        { error: 'Failed to generate code with AI' },
+        { status: 500 }
+      );
     }
-
-    console.log('Starting development server...');
-    try {
-      startNextServer(projectDir, port);
-    } catch (error) {
-      console.error('Failed to start server:', error);
-      throw new Error('Failed to start development server');
-    }
-
-    // Sunucunun başlaması için bekle
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    console.log('Application ready on port:', port);
-    return NextResponse.json({
-      projectId,
-      port,
-      files: filesContent
-    });
 
   } catch (error) {
     console.error('Detailed error:', error);
     return NextResponse.json(
       { 
-        message: error instanceof Error ? error.message : 'Failed to generate application',
+        error: error instanceof Error ? error.message : 'Failed to generate application',
         details: error instanceof Error ? error.stack : undefined
       },
       { status: 500 }
