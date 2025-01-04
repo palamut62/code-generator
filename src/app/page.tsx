@@ -691,7 +691,7 @@ export default function Home() {
     <div className="min-h-screen bg-[#0D1117] flex flex-col">
       {/* Navbar */}
       <nav className="bg-[#161b22] border-b border-[#30363d]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1400px] mx-auto px-4 py-3">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-4">
               <img src="/logo.png" alt="Logo" className="h-10 w-10" />
@@ -707,6 +707,15 @@ export default function Home() {
 
             <div className="flex items-center gap-4">
               <button
+                onClick={() => window.location.reload()}
+                className="p-2 rounded-lg text-[#8b949e] hover:text-white hover:bg-[#21262d] transition-all duration-200"
+                title="Ana Sayfa"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              </button>
+              <button
                 onClick={() => setShowSettings(true)}
                 className="p-2 rounded-lg text-[#8b949e] hover:text-white hover:bg-[#21262d] transition-all duration-200"
                 title="Settings"
@@ -720,24 +729,19 @@ export default function Home() {
               <button
                 onClick={handleDownload}
                 disabled={!selectedProject || isDownloading}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-mono transition-all duration-200 ${
+                className={`p-2 rounded-lg transition-all duration-200 ${
                   !selectedProject || isDownloading
-                    ? 'bg-[#21262d] text-[#8b949e] cursor-not-allowed border border-[#30363d]'
-                    : 'bg-white text-black hover:bg-gray-100 hover:shadow-lg'
+                    ? 'text-[#8b949e] cursor-not-allowed'
+                    : 'text-[#8b949e] hover:text-white hover:bg-[#21262d]'
                 }`}
+                title="Download Project"
               >
                 {isDownloading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#8b949e] border-t-transparent"></div>
-                    <span>Downloading...</span>
-                  </>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-current border-t-transparent"></div>
                 ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    <span>Download Project</span>
-                  </>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
                 )}
               </button>
             </div>

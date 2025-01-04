@@ -412,6 +412,16 @@ IMPORTANT RULES:
 3. ALL components that use React hooks (useState, useEffect, etc.) MUST start with 'use client' directive
 4. ALL components that use browser APIs MUST start with 'use client' directive
 5. ALL interactive components MUST start with 'use client' directive
+6. ALL utility functions and constants MUST be defined BEFORE they are used in components
+7. For games, ALL game logic functions MUST be defined at the top of the file, before any component definitions
+8. ALL type definitions and interfaces MUST be defined at the top of the file
+9. Follow this exact order in game components:
+   - Type definitions
+   - Constants
+   - Utility functions
+   - Game logic functions
+   - Main component
+   - Helper components
 
 Component Structure Example:
 1. Client Components (with hooks, interactivity):
