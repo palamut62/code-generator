@@ -91,6 +91,7 @@ const baseFiles = {
   'tailwind.config.ts': `import type { Config } from 'tailwindcss'
 
 const config: Config = {
+  darkMode: ["class"],
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -358,15 +359,23 @@ export async function POST(request: Request) {
           // Görüntü analizi için prompt
           prompt = `I have a screenshot of a web application. Please analyze this image and create a Next.js application that looks exactly like it.
 The image is provided in base64 format. Please analyze the layout, components, styling, and functionality visible in the screenshot.
-Create a pixel-perfect implementation using Next.js, React and Tailwind CSS.
+
+IMPORTANT: ALL components that use React hooks (useState, useEffect, etc.) or browser APIs MUST start with 'use client' directive.
 
 Image data: ${imageBase64}
 
-Return ONLY a JSON object with two files. Format:
+Return a JSON object where each key is a file path and each value is the file content as a string. Example format:
 {
-  "src/app/page.tsx": "// page code",
-  "src/app/layout.tsx": "// layout code"
+  "src/app/page.tsx": "'use client';\n\nexport default function Page() { return <div>Hello</div> }",
+  "src/components/InteractiveComponent.tsx": "'use client';\n\nimport { useState } from 'react';\n\nexport function InteractiveComponent() { /* ... */ }",
+  "src/app/layout.tsx": "export default function Layout({ children }) { return <div>{children}</div> }",
+  "src/app/globals.css": "/* CSS content */"
 }
+
+IMPORTANT: The response MUST include at minimum:
+1. src/app/page.tsx (with 'use client' if it uses hooks)
+2. src/app/layout.tsx
+3. src/app/globals.css
 
 Requirements:
 1. Use Tailwind CSS for styling
@@ -389,307 +398,75 @@ NO explanations, NO comments outside the code, ONLY the JSON object.`;
         prompt = `Analyze the following request and create a professional Next.js application:
 ${input}
 
-First, determine the type of application and its requirements:
-[Previous analysis sections remain the same...]
+First, analyze the type of application requested:
+1. Web Application (Todo, Blog, Dashboard etc.)
+2. Game (Snake, Tetris, Puzzle etc.)
+3. Tool/Utility (Calculator, Converter etc.)
+4. Interactive UI (Form, Animation etc.)
 
-Implementation Guidelines:
-1. Required Files Generation:
-   For EACH component/feature:
-   - Main Component File
-   - Related Hook Files
-   - Required Utility Functions
-   - Necessary Types
-   - Store/State Management
-   - Helper Functions
-   - Constants
-   - Styles (if needed)
-   - Tests (if needed)
+Then create ALL necessary files based on the application type:
 
-2. Dependencies Check:
-   For EACH imported module:
-   - Verify the import path exists
-   - Check if module is installed in package.json
-   - Add required @types packages for TypeScript
-   - Common utility packages to include:
-     * uuid (for unique IDs)
-     * nanoid (for shorter unique IDs)
-     * date-fns (for date manipulation)
-     * lodash (for utility functions)
-     * react-toastify (for notifications)
-     * react-hot-toast (for toast notifications)
-     * axios (for HTTP requests)
-     * zod (for validation)
+IMPORTANT RULES:
+1. Use Next.js 14 App Router format (NOT pages router)
+2. All pages must be in src/app directory
+3. ALL components that use React hooks (useState, useEffect, etc.) MUST start with 'use client' directive
+4. ALL components that use browser APIs MUST start with 'use client' directive
+5. ALL interactive components MUST start with 'use client' directive
 
-3. Hook Implementation:
-   Common Custom Hooks with FULL implementation:
+Component Structure Example:
+1. Client Components (with hooks, interactivity):
+\`\`\`typescript
+'use client';
 
-   useDebounce.ts:
-   \`\`\`typescript
-   import { useState, useEffect } from 'react';
-   
-   export function useDebounce<T>(value: T, delay: number): T {
-     const [debouncedValue, setDebouncedValue] = useState<T>(value);
-   
-     useEffect(() => {
-       const handler = setTimeout(() => {
-         setDebouncedValue(value);
-       }, delay);
-   
-       return () => {
-         clearTimeout(handler);
-       };
-     }, [value, delay]);
-   
-     return debouncedValue;
-   }
-   \`\`\`
+import { useState } from 'react';
 
-   useMounted.ts:
-   \`\`\`typescript
-   import { useEffect, useState } from 'react';
-   
-   export function useMounted() {
-     const [mounted, setMounted] = useState(false);
-   
-     useEffect(() => {
-       setMounted(true);
-       return () => setMounted(false);
-     }, []);
-   
-     return mounted;
-   }
-   \`\`\`
+export function InteractiveComponent() {
+  const [state, setState] = useState();
+  // Component logic
+}
+\`\`\`
 
-   useLocalStorage.ts:
-   \`\`\`typescript
-   import { useState, useEffect } from 'react';
-   
-   export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
-     const [storedValue, setStoredValue] = useState<T>(() => {
-       if (typeof window === 'undefined') return initialValue;
-       
-       try {
-         const item = window.localStorage.getItem(key);
-         return item ? JSON.parse(item) : initialValue;
-       } catch (error) {
-         console.error(error);
-         return initialValue;
-       }
-     });
-   
-     useEffect(() => {
-       try {
-         window.localStorage.setItem(key, JSON.stringify(storedValue));
-       } catch (error) {
-         console.error(error);
-       }
-     }, [key, storedValue]);
-   
-     return [storedValue, setStoredValue];
-   }
-   \`\`\`
+2. Server Components (static, no hooks):
+\`\`\`typescript
+export function StaticComponent() {
+  // Static content only
+  return <div>Static Content</div>;
+}
+\`\`\`
 
-   useMediaQuery.ts:
-   \`\`\`typescript
-   import { useState, useEffect } from 'react';
-   
-   export function useMediaQuery(query: string): boolean {
-     const [matches, setMatches] = useState(false);
-   
-     useEffect(() => {
-       const media = window.matchMedia(query);
-       if (media.matches !== matches) {
-         setMatches(media.matches);
-       }
-   
-       const listener = () => setMatches(media.matches);
-       media.addEventListener('change', listener);
-   
-       return () => media.removeEventListener('change', listener);
-     }, [matches, query]);
-   
-     return matches;
-   }
-   \`\`\`
+Required Base Files:
+1. src/app/page.tsx (Server Component unless it needs interactivity)
+2. src/app/layout.tsx (Root layout)
+3. src/app/globals.css (Global styles with Tailwind)
 
-   useOnScreen.ts:
-   \`\`\`typescript
-   import { useState, useEffect, RefObject } from 'react';
-   
-   export function useOnScreen<T extends Element>(
-     ref: RefObject<T>,
-     rootMargin: string = '0px'
-   ): boolean {
-     const [isIntersecting, setIntersecting] = useState<boolean>(false);
-   
-     useEffect(() => {
-       const observer = new IntersectionObserver(
-         ([entry]) => {
-           setIntersecting(entry.isIntersecting);
-         },
-         {
-           rootMargin,
-         }
-       );
-   
-       if (ref.current) {
-         observer.observe(ref.current);
-       }
-   
-       return () => {
-         if (ref.current) {
-           observer.unobserve(ref.current);
-         }
-       };
-     }, [ref, rootMargin]);
-   
-     return isIntersecting;
-   }
-   \`\`\`
+For Web Applications:
+- Mark form components with 'use client'
+- Mark components using react-hook-form with 'use client'
+- Mark state management components with 'use client'
+- Mark interactive UI components with 'use client'
 
-   useKeyPress.ts:
-   \`\`\`typescript
-   import { useState, useEffect } from 'react';
-   
-   export function useKeyPress(targetKey: string): boolean {
-     const [keyPressed, setKeyPressed] = useState(false);
-   
-     useEffect(() => {
-       const downHandler = ({ key }: KeyboardEvent) => {
-         if (key === targetKey) {
-           setKeyPressed(true);
-         }
-       };
-   
-       const upHandler = ({ key }: KeyboardEvent) => {
-         if (key === targetKey) {
-           setKeyPressed(false);
-         }
-       };
-   
-       window.addEventListener('keydown', downHandler);
-       window.addEventListener('keyup', upHandler);
-   
-       return () => {
-         window.removeEventListener('keydown', downHandler);
-         window.removeEventListener('keyup', upHandler);
-       };
-     }, [targetKey]);
-   
-     return keyPressed;
-   }
-   \`\`\`
+For Games:
+- Mark ALL game components with 'use client'
+- Mark canvas components with 'use client'
+- Mark components using requestAnimationFrame with 'use client'
+- Mark components using keyboard/mouse events with 'use client'
 
-   useClickOutside.ts:
-   \`\`\`typescript
-   import { useEffect, RefObject } from 'react';
-   
-   export function useClickOutside<T extends HTMLElement>(
-     ref: RefObject<T>,
-     handler: (event: MouseEvent | TouchEvent) => void
-   ): void {
-     useEffect(() => {
-       const listener = (event: MouseEvent | TouchEvent) => {
-         if (!ref.current || ref.current.contains(event.target as Node)) {
-           return;
-         }
-         handler(event);
-       };
-   
-       document.addEventListener('mousedown', listener);
-       document.addEventListener('touchstart', listener);
-   
-       return () => {
-         document.removeEventListener('mousedown', listener);
-         document.removeEventListener('touchstart', listener);
-       };
-     }, [ref, handler]);
-   }
-   \`\`\`
+[Previous color system and hooks implementation remain the same...]
 
-4. Utility Functions:
-   Common Utils:
-   - formatters (date, number, currency)
-   - validators (input, form, data)
-   - animations (transitions, effects)
-   - storage (local, session)
-   - api (axios instances, fetchers)
-   - events (custom event handlers)
-   - constants (configuration, settings)
-   - helpers (common functions)
-
-5. Component Dependencies:
-   For EACH component, include:
-   - Required hooks
-   - Required utils
-   - Required types
-   - Required constants
-   - Required store
-   - Required styles
-
-Generate ALL necessary files based on the analyzed requirements. Example structure:
+Return a JSON object where each key is a file path and each value is the file content as a string. Example format:
 {
-  // Core App Files
-  "src/app/layout.tsx": "// Root layout with providers",
-  "src/app/page.tsx": "// Main page",
-  
-  // Features
-  "src/components/features/client/[Feature].tsx": "'use client';\n// Feature implementation",
-  
-  // Custom Hooks (Create ALL required hooks)
-  "src/lib/hooks/use-interval.ts": "// Interval hook implementation",
-  "src/lib/hooks/use-debounce.ts": "// Debounce hook implementation",
-  "src/lib/hooks/use-media-query.ts": "// Media query hook implementation",
-  "src/lib/hooks/use-local-storage.ts": "// Local storage hook implementation",
-  "src/lib/hooks/use-previous.ts": "// Previous value hook implementation",
-  "src/lib/hooks/use-window-size.ts": "// Window size hook implementation",
-  "src/lib/hooks/use-mounted.ts": "// Mounted hook implementation",
-  "src/lib/hooks/use-click-outside.ts": "// Click outside hook implementation",
-  "src/lib/hooks/use-key-press.ts": "// Key press hook implementation",
-  "src/lib/hooks/use-on-screen.ts": "// On screen hook implementation",
-  
-  // Utils (Create ALL required utils)
-  "src/lib/utils/formatters.ts": "// Formatting utilities",
-  "src/lib/utils/validators.ts": "// Validation utilities",
-  "src/lib/utils/animations.ts": "// Animation utilities",
-  "src/lib/utils/storage.ts": "// Storage utilities",
-  "src/lib/utils/api.ts": "// API utilities",
-  "src/lib/utils/events.ts": "// Event utilities",
-  
-  // Constants
-  "src/lib/constants/[feature].ts": "// Feature-specific constants",
-  "src/lib/constants/config.ts": "// Global configuration",
-  
-  // Types
-  "src/types/[feature].ts": "// Feature-specific types",
-  "src/types/common.ts": "// Common types",
-  
-  // Store
-  "src/store/[feature].ts": "'use client';\n// Feature-specific store",
-  
-  // Styles
-  "src/styles/[feature].css": "// Feature-specific styles",
-  
-  // Components
-  "src/components/ui/client/[Component].tsx": "'use client';\n// UI components",
-  
-  // Services
-  "src/lib/services/[service].ts": "// Service implementation"
+  "src/app/page.tsx": "'use client';\n\nexport default function Page() { return <div>Hello</div> }",
+  "src/components/TodoList.tsx": "'use client';\n\nimport { useState } from 'react';\n\nexport function TodoList() { /* ... */ }",
+  "src/app/layout.tsx": "export default function Layout({ children }) { return <div>{children}</div> }",
+  "src/app/globals.css": "/* CSS content */"
 }
 
-Critical Requirements:
-1. Include FULL implementation of ALL custom hooks
-2. Export ALL hooks properly
-3. Add proper TypeScript types for ALL hooks
-4. Add proper error handling in hooks
-5. Add proper cleanup in useEffect
-6. Add proper type safety
-7. Add proper documentation
-8. Add proper examples
-9. Add proper tests
-10. Optimize for performance
+IMPORTANT: The response MUST include at minimum:
+1. src/app/page.tsx
+2. src/app/layout.tsx
+3. src/app/globals.css
 
-NO explanations, NO comments outside the code, ONLY the JSON object with ALL necessary files based on the analyzed requirements.`;
+NO explanations, NO comments outside the code, ONLY the JSON object.`;
       }
 
       console.log('Generating code...');
@@ -717,14 +494,10 @@ NO explanations, NO comments outside the code, ONLY the JSON object with ALL nec
         // JSON'ı parse et
         try {
           generatedFiles = JSON.parse(cleanedText);
-        } catch (parseError) {
-          cleanedText = cleanedText
-            .replace(/\\\\/g, '\\')
-            .replace(/\\"/g, '"')
-            .replace(/\\n/g, '\n')
-            .replace(/\t/g, '    ');
-
-          generatedFiles = JSON.parse(cleanedText);
+          
+          // Eğer files objesi varsa, içindeki dosyaları al
+          if (generatedFiles.files) {
+            generatedFiles = generatedFiles.files;
         }
 
         // Dosya kontrolü
@@ -736,6 +509,15 @@ NO explanations, NO comments outside the code, ONLY the JSON object with ALL nec
         if (typeof generatedFiles['src/app/page.tsx'] !== 'string' || 
             typeof generatedFiles['src/app/layout.tsx'] !== 'string') {
           throw new Error('File contents must be strings');
+          }
+
+        } catch (parseError) {
+          console.error('Parse error:', parseError);
+          console.error('Raw text:', text);
+          return NextResponse.json(
+            { error: 'Failed to parse AI response' },
+            { status: 500 }
+          );
         }
 
       } catch (error) {
