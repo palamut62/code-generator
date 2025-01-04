@@ -672,10 +672,10 @@ export default function Home() {
     <div className="min-h-screen bg-[#0D1117] flex flex-col">
       {/* Navbar */}
       <nav className="bg-[#0D1117]">
-        <div className="max-w-[1400px] mx-auto px-4 py-3">
-          <div className="flex items-center justify-between h-14">
+        <div className="max-w-[1400px] mx-auto px-4 py-2">
+          <div className="flex items-center justify-between h-12">
             <div className="flex items-center gap-4">
-              <img src="/logo.png" alt="Logo" className="h-10 w-10" />
+              <img src="/logo.png" alt="Logo" className="h-8 w-8" />
               <div className="flex flex-col">
                 <h1 className="text-white text-lg font-mono">Code Generator</h1>
                 {apiSettings?.model && (
