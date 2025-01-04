@@ -998,29 +998,51 @@ export default function Home() {
 
           {/* Sağ Panel - Önizleme */}
           <div className="h-[calc(50vh-5rem)] lg:h-[calc(100vh-15rem)] bg-[#0d1117] rounded-lg border border-[#30363d] overflow-hidden">
+            {/* Preview Header */}
             <div className="border-b border-[#30363d] bg-[#161b22] p-3 flex justify-between items-center">
-              <h2 className="text-white font-mono text-sm">Preview</h2>
-              {selectedProject && (
-                <button
-                  onClick={handleRestartPreview}
-                  disabled={loading}
-                  className={`p-1.5 rounded-lg transition-all duration-200 ${
-                    loading
-                      ? 'text-[#8b949e] cursor-not-allowed'
-                      : 'text-[#8b949e] hover:text-white hover:bg-[#21262d]'
-                  }`}
-                  title="Restart Preview"
-                >
-                  {loading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-current border-t-transparent"></div>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  )}
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                <h2 className="text-white font-mono text-sm">Preview</h2>
+                {loadingStatus && (
+                  <span className="text-[#8b949e] text-xs font-mono">{loadingStatus}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {previewUrl && (
+                  <>
+                    <button
+                      onClick={handleRestartPreview}
+                      disabled={loading}
+                      className={`p-1.5 rounded-lg transition-all duration-200 ${
+                        loading
+                          ? 'text-[#8b949e] cursor-not-allowed'
+                          : 'text-[#8b949e] hover:text-white hover:bg-[#21262d]'
+                      }`}
+                      title="Yeniden Başlat"
+                    >
+                      {loading ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-current border-t-transparent"></div>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      )}
+                    </button>
+                    <a
+                      href={previewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded-lg text-[#8b949e] hover:text-white hover:bg-[#21262d] transition-all duration-200"
+                      title="Tam Ekran"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 3h6m0 0v6m0-6l-7 7M9 21H3m0 0v-6m0 6l7-7" />
+                      </svg>
+                    </a>
+                  </>
+                )}
+              </div>
             </div>
+            {/* Preview Content */}
             <div className="h-[calc(100%-48px)] bg-[#0d1117]">
               {previewUrl ? (
                 <iframe
