@@ -328,39 +328,24 @@ export default function Home() {
 
   // Preview'ı yenile ve projeyi yeniden başlat
   const handleRefresh = async () => {
-    if (!projectId || !selectedProject) return;
-
     try {
-    setLoading(true);
-    setError(null);
+      setLoading(true);
+      setError(null);
 
-      const project = projects.find(p => p.id === selectedProject);
-      if (!project) return;
-
-      // Projeyi yeniden başlat
-      const response = await fetch('/api/start-project', {
+      // Tüm projeleri durdur
+      const stopResponse = await fetch('/api/stop-all-projects', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          projectId: project.id,
-          port: project.port
-        }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to restart project');
+      if (!stopResponse.ok) {
+        throw new Error('Failed to stop projects');
       }
 
-      // iframe'i yenile
-      const iframe = document.querySelector('iframe');
-      if (iframe) {
-        iframe.src = `http://localhost:${project.port}`;
-      }
+      // Sayfayı yenile
+      window.location.reload();
     } catch (error) {
-      console.error('Error refreshing preview:', error);
-      setError(error instanceof Error ? error.message : 'Failed to refresh preview');
+      console.error('Error refreshing:', error);
+      setError(error instanceof Error ? error.message : 'Failed to refresh');
     } finally {
       setLoading(false);
     }
