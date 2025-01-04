@@ -690,7 +690,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#0D1117] flex flex-col">
       {/* Navbar */}
-      <nav className="bg-[#161b22] border-b border-[#30363d]">
+      <nav className="bg-[#0D1117]">
         <div className="max-w-[1400px] mx-auto px-4 py-3">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-4">
@@ -1093,7 +1093,7 @@ export default function Home() {
         </div>
 
         {/* Status Bar */}
-        <div className="h-7 bg-[#161b22] border border-[#30363d] rounded-lg flex items-center justify-between px-3 text-[#8b949e] text-[11px] font-mono">
+        <div className="h-7 bg-[#0D1117] flex items-center justify-between px-3 text-[#8b949e] text-[11px] font-mono">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
