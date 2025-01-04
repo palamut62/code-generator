@@ -264,34 +264,58 @@ export default function Home() {
       if (!projectId) return;
 
       setLoading(true);
-      setLoadingStatus('Starting development server...');
+      setLoadingStatus('Starting project...');
 
       const project = projects.find(p => p.id === projectId);
       if (!project) {
         throw new Error('Project not found');
       }
 
-      // 5 saniye bekleyerek sunucunun başlamasını bekle
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Önce mevcut sunucuyu durdur
+      await fetch('/api/stop-project', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ projectId }),
+      });
 
+      // Server'ın tamamen durması için bekle
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      setLoadingStatus('Building project...');
+
+      // Projeyi başlat
       const response = await fetch('/api/start-project', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          projectId,
+          projectId: projectId,
           port: project.port || 3001,
+          commands: [
+            'cd ./temp-projects/' + projectId,
+            'npm install',
+            'npm run build',
+            'npm run dev'
+          ],
+          waitForOutput: 'Ready'
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to start project');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to start project');
       }
 
-      setPreviewUrl(`http://localhost:${project.port}`);
+      // Server'ın başlaması için bekle
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      setLoadingStatus('Loading preview...');
+      // Timestamp ekleyerek preview URL'sini güncelle
+      setPreviewUrl(getPreviewUrl(project.port));
+
     } catch (error) {
       console.error('Error starting project:', error);
       setError(error instanceof Error ? error.message : 'Failed to start project');
@@ -570,6 +594,8 @@ export default function Home() {
 
     try {
       setLoading(true);
+      setLoadingStatus('Saving changes...');
+      
       const response = await fetch('/api/save-file', {
         method: 'POST',
         headers: {
@@ -600,12 +626,48 @@ export default function Home() {
 
       setHasChanges(false);
       setError('');
+
+      // Projeyi yeniden başlat
+      await handleProjectChange(selectedProject);
+
+      // Preview'ı zorla yenile
+      const iframe = document.querySelector('iframe');
+      if (iframe) {
+        iframe.src = `${iframe.src}?t=${Date.now()}`;
+      }
+
     } catch (error) {
       console.error('Error saving file:', error);
       setError(error instanceof Error ? error.message : 'Failed to save file');
-    } finally {
       setLoading(false);
+      setLoadingStatus('');
     }
+  };
+
+  const handleRestartPreview = async () => {
+    if (!selectedProject) return;
+
+    try {
+      // Projeyi yeniden başlat
+      await handleProjectChange(selectedProject);
+
+      // Preview'ı zorla yenile
+      const iframe = document.querySelector('iframe');
+      if (iframe) {
+        iframe.src = `${iframe.src}?t=${Date.now()}`;
+      }
+
+    } catch (error) {
+      console.error('Error restarting preview:', error);
+      setError(error instanceof Error ? error.message : 'Failed to restart preview');
+      setLoading(false);
+      setLoadingStatus('');
+    }
+  };
+
+  // Preview URL'sini yenilemek için yardımcı fonksiyon
+  const getPreviewUrl = (port: number) => {
+    return `http://localhost:${port}?t=${Date.now()}`;
   };
 
   useEffect(() => {
@@ -624,51 +686,6 @@ export default function Home() {
       setEditedCode(currentCode);
     }
   }, [projects]);
-
-  const handleRestartPreview = async () => {
-    if (!selectedProject) return;
-
-    try {
-      setLoading(true);
-      setLoadingStatus('Stopping current server...');
-
-      // Önce mevcut sunucuyu durdur
-      await fetch('/api/stop-project', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ projectId: selectedProject }),
-      });
-
-      setLoadingStatus('Building project...');
-      const response = await fetch('/api/start-project', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          projectId: selectedProject,
-          port: projects.find(p => p.id === selectedProject)?.port || 3001,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to restart preview');
-
-      setLoadingStatus('Starting development server...');
-      // Önizleme URL'sini güncelle
-      const project = projects.find(p => p.id === selectedProject);
-      if (project) {
-        setPreviewUrl(`http://localhost:${project.port}`);
-      }
-    } catch (error) {
-      console.error('Error restarting preview:', error);
-      setError('Failed to restart preview');
-    } finally {
-      setLoading(false);
-      setLoadingStatus('');
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#0D1117] flex flex-col">
