@@ -271,22 +271,18 @@ export default function Home() {
         throw new Error('Project not found');
       }
 
-      // Önce mevcut sunucuyu durdur
-      await fetch('/api/stop-project', {
+      // Önce mevcut sunucuları temizle
+      await fetch('/api/stop-all-projects', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ projectId }),
       });
 
       // Server'ın tamamen durması için bekle
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      setLoadingStatus('Building project...');
+      setLoadingStatus('Installing dependencies...');
 
       // Projeyi başlat
-      const response = await fetch('/api/start-project', {
+      const startResponse = await fetch('/api/start-project', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -296,21 +292,21 @@ export default function Home() {
           port: project.port || 3001,
           commands: [
             'cd ./temp-projects/' + projectId,
-            'npm install',
+            'npm install --force',
             'npm run build',
             'npm run dev'
           ],
-          waitForOutput: 'Ready'
+          waitForOutput: 'ready - started server on'
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!startResponse.ok) {
+        const errorData = await startResponse.json();
         throw new Error(errorData.error || 'Failed to start project');
       }
 
       // Server'ın başlaması için bekle
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 5000));
 
       setLoadingStatus('Loading preview...');
       // Timestamp ekleyerek preview URL'sini güncelle
